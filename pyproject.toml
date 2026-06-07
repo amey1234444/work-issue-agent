@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "work-issue-agent"
+version = "0.1.0"
+description = "A workflow-driven AI coding agent. Slash-style commands (work-issue, fix-bug, ...) are defined as markdown workflows in .ai/ and the repo's own instruction files are the source of truth."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Amey Bhagwatkar" }]
+dependencies = [
+    "requests>=2.31",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.39"]
+openai = ["openai>=1.40"]
+all = ["anthropic>=0.39", "openai>=1.40"]
+dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.10", "types-PyYAML", "types-requests"]
+
+[project.scripts]
+ai-agent = "agent.cli:main"
+
+[tool.setuptools]
+packages = ["agent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = false
