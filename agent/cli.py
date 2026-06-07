@@ -202,7 +202,9 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--dry-run", action="store_true", help="Plan only; make no edits")
     common.add_argument("--no-pr", action="store_true", help="Apply + test but do not open a PR")
     common.add_argument(
-        "--provider", default=None, help="Override LLM provider (anthropic|openai|mock)"
+        "--provider",
+        default=None,
+        help="Override LLM provider (anthropic|openai|openrouter|mock)",
     )
 
     p_list = sub.add_parser("list", help="List available workflows")
