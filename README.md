@@ -96,7 +96,7 @@ $ pytest -q
 14 passed in 0.05s
 ```
 
-![Verification: ruff, mypy and pytest all passing](docs/verify-tests.png)
+![Verification: ruff, mypy and pytest all passing](docs/verification-proof.png)
 
 ## Install
 
