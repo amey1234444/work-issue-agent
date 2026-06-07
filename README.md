@@ -80,6 +80,24 @@ planned, wrote `CONTRIBUTING.md`, ran the test suite, and opened
 
 ![Demo: PR opened by the agent](docs/demo-pr3.png)
 
+## Verification
+
+Lint, type-check and the test suite all pass:
+
+```text
+$ ruff check .
+All checks passed!
+
+$ mypy agent
+Success: no issues found in 11 source files
+
+$ pytest -q
+..............                                                           [100%]
+14 passed in 0.05s
+```
+
+![Verification: ruff, mypy and pytest all passing](docs/verify-tests.png)
+
 ## Install
 
 ```bash
