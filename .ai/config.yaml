@@ -1,0 +1,17 @@
+# Configuration for work-issue-agent when this repo is the target.
+# All keys are optional; env vars (LLM_PROVIDER, ANTHROPIC_API_KEY, ...) take
+# precedence where noted in the README.
+
+# Files treated as the source-of-truth instructions, in priority order.
+instruction_files:
+  - AGENTS.md
+  - .github/copilot-instructions.md
+  - CLAUDE.md
+  - README.md
+  - CONTRIBUTING.md
+
+# Glob (relative to repo root) for additional rule files injected into context.
+rules_glob: .ai/rules/*.md
+
+# Default command used to verify changes when a workflow/LLM doesn't specify one.
+test_command: pytest -q
