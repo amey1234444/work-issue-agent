@@ -45,6 +45,8 @@ class Config:
     provider: str = "anthropic"
     anthropic_model: str = "claude-3-5-sonnet-latest"
     openai_model: str = "gpt-4o"
+    openrouter_model: str = "openai/gpt-oss-120b:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     github_token: str | None = None
     max_iterations: int = 3
     instruction_files: list[str] = field(default_factory=lambda: list(DEFAULT_INSTRUCTION_FILES))
@@ -61,6 +63,8 @@ class Config:
         cfg.provider = os.environ.get("LLM_PROVIDER", cfg.provider).lower()
         cfg.anthropic_model = os.environ.get("ANTHROPIC_MODEL", cfg.anthropic_model)
         cfg.openai_model = os.environ.get("OPENAI_MODEL", cfg.openai_model)
+        cfg.openrouter_model = os.environ.get("OPENROUTER_MODEL", cfg.openrouter_model)
+        cfg.openrouter_base_url = os.environ.get("OPENROUTER_BASE_URL", cfg.openrouter_base_url)
         cfg.github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PAT")
         try:
             cfg.max_iterations = int(os.environ.get("AGENT_MAX_ITERATIONS", cfg.max_iterations))
