@@ -37,6 +37,67 @@ becomes a runnable command, so adding `/fix-bug`, `/add-feature`, `/review-pr`,
 etc. is just adding a markdown file — no code changes. The repo itself becomes the
 behaviour spec, which scales far better than stuffing everything into one prompt.
 
+## Demo (live run)
+
+A real run against this repository, using the OpenRouter provider with the free
+`openai/gpt-oss-120b:free` model:
+
+```bash
+LLM_PROVIDER=openrouter OPENROUTER_MODEL=openai/gpt-oss-120b:free \
+ai-agent work-issue https://github.com/amey1234444/work-issue-agent/issues/2 --path .
+```
+
+Output:
+
+```text
+Fetched issue #2: Add a CONTRIBUTING.md with contribution guidelines
+Loaded 2 instruction file(s), 2 rule(s).
+
+== Planning (openrouter) ==
+Understanding:
+  The issue requests adding a new CONTRIBUTING.md file at the repository root ...
+
+Plan:
+  1. Create a new file CONTRIBUTING.md at the repository root ...
+  2. Ensure the markdown follows the style of existing docs and is concise.
+  3. Run the test suite (pytest -q) and lint (ruff check .) ...
+  4. Provide the test command (pytest -q) for the PR metadata.
+
+== Implementing (attempt 1/3) ==
+Changes:
+  created CONTRIBUTING.md
+Running: ['pytest -q']
+Tests passed.
+
+Summary: Added CONTRIBUTING.md with concise contribution guidelines
+
+Opened PR: https://github.com/amey1234444/work-issue-agent/pull/3
+```
+
+The agent read [issue #2](https://github.com/amey1234444/work-issue-agent/issues/2),
+planned, wrote `CONTRIBUTING.md`, ran the test suite, and opened
+[PR #3](https://github.com/amey1234444/work-issue-agent/pull/3) — fully autonomously:
+
+![Demo: PR opened by the agent](docs/demo-pr3.png)
+
+## Verification
+
+Lint, type-check and the test suite all pass:
+
+```text
+$ ruff check .
+All checks passed!
+
+$ mypy agent
+Success: no issues found in 11 source files
+
+$ pytest -q
+..............                                                           [100%]
+14 passed in 0.05s
+```
+
+![Verification: ruff, mypy and pytest all passing](docs/verify-tests.png)
+
 ## Install
 
 ```bash
@@ -54,16 +115,22 @@ Copy `.env.example` to `.env` and fill in:
 cp .env.example .env
 ```
 
-| Variable             | Purpose                                              |
-|----------------------|------------------------------------------------------|
-| `LLM_PROVIDER`       | `anthropic` \| `openai` \| `mock`                    |
-| `ANTHROPIC_API_KEY`  | required when provider is `anthropic`                |
-| `OPENAI_API_KEY`     | required when provider is `openai`                   |
-| `GITHUB_TOKEN`       | classic PAT with `repo` scope (read issues, open PR) |
-| `AGENT_MAX_ITERATIONS` | self-correction loops on test failure (default 3)  |
+| Variable             | Purpose                                                      |
+|----------------------|--------------------------------------------------------------|
+| `LLM_PROVIDER`       | `anthropic` \| `openai` \| `openrouter` \| `mock`            |
+| `ANTHROPIC_API_KEY`  | required when provider is `anthropic`                        |
+| `OPENAI_API_KEY`     | required when provider is `openai`                           |
+| `OPENROUTER_API_KEY` | required when provider is `openrouter`                       |
+| `OPENROUTER_MODEL`   | OpenRouter model slug (default `openai/gpt-oss-120b:free`)   |
+| `GITHUB_TOKEN`       | classic PAT with `repo` scope (read issues, open PR)         |
+| `AGENT_MAX_ITERATIONS` | self-correction loops on test failure (default 3)          |
 
 `mock` needs no API key and returns a deterministic response — handy for trying
 the pipeline end-to-end offline.
+
+**OpenRouter** is an OpenAI-compatible gateway to hundreds of models; a free-tier
+key can run `:free` model slugs (e.g. `openai/gpt-oss-120b:free`). Set
+`LLM_PROVIDER=openrouter` and `OPENROUTER_API_KEY=...`.
 
 ## Usage
 

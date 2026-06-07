@@ -51,19 +51,21 @@ class AnthropicProvider:
 
 
 class OpenAIProvider:
-    def __init__(self, model: str):
+    """OpenAI Chat Completions, also used for any OpenAI-compatible endpoint."""
+
+    def __init__(self, model: str, *, api_key_env: str = "OPENAI_API_KEY", base_url: str | None = None):
         try:
             import openai  # noqa: F401
         except ImportError as exc:  # pragma: no cover - depends on install
             raise LLMError(
                 "The 'openai' package is not installed. Install with: pip install 'work-issue-agent[openai]'"
             ) from exc
-        api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get(api_key_env)
         if not api_key:
-            raise LLMError("OPENAI_API_KEY is not set.")
+            raise LLMError(f"{api_key_env} is not set.")
         from openai import OpenAI
 
-        self._client = OpenAI(api_key=api_key)
+        self._client = OpenAI(api_key=api_key, base_url=base_url)
         self._model = model
 
     def complete(self, system: str, user: str) -> str:
@@ -118,6 +120,14 @@ def get_provider(config: Config) -> LLMProvider:
         return AnthropicProvider(config.anthropic_model)
     if provider == "openai":
         return OpenAIProvider(config.openai_model)
+    if provider == "openrouter":
+        return OpenAIProvider(
+            config.openrouter_model,
+            api_key_env="OPENROUTER_API_KEY",
+            base_url=config.openrouter_base_url,
+        )
     if provider == "mock":
         return MockProvider()
-    raise LLMError(f"Unknown LLM_PROVIDER: {provider!r} (expected anthropic|openai|mock)")
+    raise LLMError(
+        f"Unknown LLM_PROVIDER: {provider!r} (expected anthropic|openai|openrouter|mock)"
+    )
