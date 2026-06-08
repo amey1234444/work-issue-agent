@@ -1,5 +1,5 @@
-from agent.config import Config
-from agent.context import build_repo_context, read_files
+from github_issue_agent.config import Config
+from github_issue_agent.context import build_repo_context, read_files
 
 
 def _make_repo(tmp_path):

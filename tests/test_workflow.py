@@ -1,4 +1,4 @@
-from agent.workflow import extract_json
+from github_issue_agent.workflow import extract_json
 
 
 def test_extract_json_plain():

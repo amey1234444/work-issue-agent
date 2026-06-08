@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "work-issue-agent"
+name = "github-issue-agent"
 version = "0.1.0"
 description = "A workflow-driven AI coding agent. Slash-style commands (work-issue, fix-bug, ...) are defined as markdown workflows in .ai/ and the repo's own instruction files are the source of truth."
 readme = "README.md"
@@ -22,10 +22,11 @@ all = ["anthropic>=0.39", "openai>=1.40"]
 dev = ["pytest>=8.0", "ruff>=0.6", "mypy>=1.10", "types-PyYAML", "types-requests"]
 
 [project.scripts]
-ai-agent = "agent.cli:main"
+github-issue-agent = "github_issue_agent.cli:main"
+ai-agent = "github_issue_agent.cli:main"
 
 [tool.setuptools]
-packages = ["agent"]
+packages = ["github_issue_agent"]
 
 [tool.ruff]
 line-length = 100

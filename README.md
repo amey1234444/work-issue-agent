@@ -1,15 +1,21 @@
-# work-issue-agent
+# github-issue-agent
 
-A small, **workflow-driven AI coding agent**. Instead of hardcoding behaviour into
-the agent, the agent is driven by:
+A small, **workflow-driven AI coding agent** that reads a GitHub issue, writes the
+code to resolve it (plus tests), verifies the tests pass, and opens a pull
+request — autonomously. Instead of hardcoding behaviour into the agent, it is
+driven by:
 
 1. **Slash-style commands** that map to markdown **workflow files** in `.ai/workflows/`.
 2. The target repository's own **instruction files** (`AGENTS.md`, `README.md`,
    `CONTRIBUTING.md`, `.github/copilot-instructions.md`, `.ai/rules/*`) — these are
    the source of truth for *how* the agent should behave.
 
+- **Python import name:** `github_issue_agent`
+- **Pip / distribution name:** `github-issue-agent`
+- **CLI command:** `github-issue-agent` (the shorter `ai-agent` is kept as an alias)
+
 ```
-ai-agent work-issue https://github.com/org/repo/issues/123
+github-issue-agent work-issue https://github.com/org/repo/issues/123
 ```
 
 does exactly what you sketched out:
@@ -88,24 +94,41 @@ Lint, type-check and the test suite all pass:
 $ ruff check .
 All checks passed!
 
-$ mypy agent
-Success: no issues found in 11 source files
+$ mypy github_issue_agent
+Success: no issues found in 12 source files
 
 $ pytest -q
-..............                                                           [100%]
-14 passed in 0.05s
+.......................                                                  [100%]
+23 passed in 0.16s
 ```
+
+(The screenshot below is from an earlier run; the suite has since grown as
+features/tests were added.)
 
 ![Verification: ruff, mypy and pytest all passing](docs/verification-proof.png)
 
 ## Install
 
+From a local clone (for development):
+
 ```bash
-git clone <this-repo>
+git clone https://github.com/amey1234444/work-issue-agent.git
 cd work-issue-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[all]"     # or .[anthropic] / .[openai]
 ```
+
+Directly from GitHub (e.g. in **Google Colab** or any fresh environment — no
+clone needed):
+
+```bash
+pip install "github-issue-agent[openai] @ git+https://github.com/amey1234444/work-issue-agent.git"
+```
+
+Then `from github_issue_agent import work_issue` works immediately. It is **not**
+on PyPI, so install from the `git+https://...` URL above rather than
+`pip install github-issue-agent`. The `[openai]` extra pulls the SDK used for the
+OpenAI **and** OpenRouter providers; the `mock` provider needs no extra and no key.
 
 ## Configure
 
@@ -137,19 +160,19 @@ key can run `:free` model slugs (e.g. `openai/gpt-oss-120b:free`). Set
 List the commands available in a repo (discovered from `.ai/workflows/`):
 
 ```bash
-ai-agent list --path /path/to/target/repo
+github-issue-agent list --path /path/to/target/repo
 ```
 
 Resolve an issue and open a PR:
 
 ```bash
-ai-agent work-issue https://github.com/org/repo/issues/123 --path /path/to/repo
+github-issue-agent work-issue https://github.com/org/repo/issues/123 --path /path/to/repo
 ```
 
 Run any workflow with a free-form prompt instead of an issue:
 
 ```bash
-ai-agent run add-feature --prompt "Add a --json flag to the export command" --path .
+github-issue-agent run add-feature --prompt "Add a --json flag to the export command" --path .
 ```
 
 Useful flags:
@@ -166,7 +189,7 @@ a backend service or a notebook — pass the API key and issue URL as arguments
 and it does the rest:
 
 ```python
-from agent import work_issue  # distribution name: work-issue-agent
+from github_issue_agent import work_issue
 
 result = work_issue(
     "https://github.com/org/repo/issues/123",
@@ -188,32 +211,128 @@ print(result.changed_files)  # list[str]
 `run_workflow(<name>, prompt=...)` to drive any other workflow (e.g. `fix-bug`,
 `add-feature`) with a free-form prompt instead of an issue. Pass an `on_event`
 callback `(kind, message)` to stream progress, or set `dry_run=True` to get just
-the plan. Unrecoverable problems raise `agent.AgentError`; everything
+the plan. Unrecoverable problems raise `github_issue_agent.AgentError`; everything
 else comes back on the `WorkflowResult`.
+
+## How to use — step by step
+
+The most common goal is "resolve issue X and open a PR". Here is the full recipe.
+
+**1. Have a local checkout of the *target* repo** (the repo the issue lives in).
+The agent edits and runs tests on a real working copy:
+
+```bash
+git clone https://github.com/org/target-repo.git
+```
+
+**2. Make sure the target repo has a workflow file.** The agent only runs commands
+that exist as `.ai/workflows/<name>.md` in the target repo. At minimum it needs
+`.ai/workflows/work-issue.md`. It also reads `AGENTS.md` and `.ai/rules/*` as the
+"rules of the house" (e.g. "use Java 21", "only additive `pom.xml` changes"). The
+better these instructions, the better the result — see *What to expect* below.
+
+**3. Provide credentials:**
+- An **LLM key** for your chosen provider (`OPENROUTER_API_KEY`, `OPENAI_API_KEY`,
+  or `ANTHROPIC_API_KEY`). `mock` needs none.
+- A **GitHub token** (`GITHUB_TOKEN`, classic PAT with `repo` scope) — only needed
+  when you actually want it to open a PR.
+
+**4a. Run it from the CLI:**
+
+```bash
+LLM_PROVIDER=openrouter OPENROUTER_MODEL=z-ai/glm-4.5-air:free \
+GITHUB_TOKEN=ghp_... OPENROUTER_API_KEY=sk-or-... \
+github-issue-agent work-issue https://github.com/org/target-repo/issues/2 \
+  --path ./target-repo
+```
+
+**4b. …or from Python (e.g. a Colab notebook):**
+
+```python
+from github_issue_agent import work_issue
+
+result = work_issue(
+    "https://github.com/org/target-repo/issues/2",
+    provider="openrouter",
+    api_key="sk-or-...",
+    model="z-ai/glm-4.5-air:free",
+    repo_path="./target-repo",
+    github_token="ghp_...",
+    open_pr=True,
+)
+print(result.pr_url, result.tests_passed, result.summary)
+```
+
+**5. Inspect the result.** On success you get a PR URL and `tests_passed=True`. Tips:
+- Start with `dry_run=True` (library) or `--dry-run` (CLI) to see only the plan.
+- Use `open_pr=False` / `--no-pr` to apply edits and run tests **without** pushing —
+  good for reviewing the diff locally first.
+- Begin with `provider="mock"` to smoke-test the wiring with no key and no network.
+
+## What to expect
+
+**What it actually does.** For each run the agent:
+
+1. **Reads** the issue and the target repo's instruction files + a file tree.
+2. **Plans** (LLM) — which files to read and the steps to take.
+3. **Implements** (LLM) — writes the **real production code that resolves the issue**
+   *and* adds/updates tests. It is not a test-only generator: in the live
+   [NEWS-PLATFORM #2](https://github.com/amey1234444/NEWS-PLATFORM/pull/9) run it
+   created `RefinerService.java` (the actual feature), wired it into the consumer
+   and controller, **and** added 10 JUnit tests.
+4. **Verifies** — runs the repo's test command. If it fails, the test output is fed
+   back to the model to fix, repeating up to `AGENT_MAX_ITERATIONS` times.
+5. **Opens a PR** — branch, commit, push, and open a PR that references the issue.
+
+So the loop is **Plan → Implement (code + tests) → Test → self-correct → PR**. The
+tests are how the agent checks its *own* implementation; they are not the deliverable
+by themselves.
+
+**A run is considered successful when** the code compiles/runs, the test command
+exits 0, and (if `open_pr=True`) a PR is opened. `WorkflowResult` reports
+`tests_passed`, `pr_url`, `summary`, `changed_files`, `plan`, and `branch`.
+
+**What it is *not*.** It is not magic and not deterministic — output quality depends
+on (a) the **model** you pick and (b) the **quality of the repo's `.ai/` rules**.
+Honest limitations observed in practice:
+- Weak/free models can produce *compiling-but-wrong* code on early attempts (e.g. a
+  corrupted `pom.xml`, or a Java regex escaping typo) and only converge after the
+  repo's `.ai/rules` are tightened. Stronger models need fewer guardrails.
+- It needs the **real toolchain** present to verify (e.g. JDK + Maven for a Java repo,
+  or `pytest` for Python). With `open_pr=False` it still plans/edits/tests locally.
+- Free-tier API keys have low rate limits; a full run makes several model calls and
+  can hit `429`s. Reasoning models are handled automatically (reasoning disabled so
+  they return an answer instead of burning the token budget "thinking").
+- It works on **one issue at a time** and expects a local checkout it can modify.
+
+**Rule of thumb:** treat it like a junior engineer who follows instructions literally.
+Clear `AGENTS.md` + `.ai/rules/*` + a capable model → clean, passing PRs. Vague
+instructions + a weak model → it may need a few iterations or a human nudge.
 
 ## How a run works
 
-1. **Context** (`agent/context.py`) — reads instruction files, `.ai/rules/*`, and a
-   `git ls-files` file tree of the target repo.
-2. **Plan** (`agent/workflow.py::Agent.plan`) — the LLM returns a JSON plan listing the
-   files it needs to read and the steps it will take.
+1. **Context** (`github_issue_agent/context.py`) — reads instruction files, `.ai/rules/*`,
+   and a `git ls-files` file tree of the target repo.
+2. **Plan** (`github_issue_agent/workflow.py::Agent.plan`) — the LLM returns a JSON plan
+   listing the files it needs to read and the steps it will take.
 3. **Implement** (`Agent.implement`) — the agent loads the requested files and the LLM
    returns JSON file edits + a test command + PR metadata.
-4. **Apply & test** (`agent/editor.py`, `agent/runner.py`) — edits are applied (with a
-   guard against escaping the repo root) and the test command runs. On failure the
-   output is fed back to the LLM, up to `AGENT_MAX_ITERATIONS`.
-5. **PR** (`agent/git_ops.py`, `agent/github_client.py`) — branch, commit, push and open
-   a pull request via the GitHub REST API.
+4. **Apply & test** (`github_issue_agent/editor.py`, `github_issue_agent/runner.py`) — edits
+   are applied (with a guard against escaping the repo root) and the test command runs.
+   On failure the output is fed back to the LLM, up to `AGENT_MAX_ITERATIONS`.
+5. **PR** (`github_issue_agent/git_ops.py`, `github_issue_agent/github_client.py`) — branch,
+   commit, push and open a pull request via the GitHub REST API.
 
 ## Project layout
 
 ```
-agent/
+github_issue_agent/
+  api.py            # importable library API: work_issue() / run_workflow()
   cli.py            # argparse entrypoint; turns .ai/workflows/*.md into commands
   config.py         # .env + env + .ai/config.yaml loading
   context.py        # gather instruction files + file tree + selected files
   github_client.py  # fetch issues, create repos/PRs (GitHub REST)
-  llm.py            # provider abstraction: anthropic | openai | mock
+  llm.py            # provider abstraction: anthropic | openai | openrouter | mock
   workflow.py       # planning/coding loop + robust JSON extraction
   editor.py         # apply file edits safely
   runner.py         # run tests/lint and capture output
@@ -230,7 +349,7 @@ tests/              # pytest suite
 ## Extending
 
 - **New command**: drop a markdown file in `.ai/workflows/`. It is instantly available
-  via `ai-agent run <name>`.
+  via `github-issue-agent run <name>`.
 - **Different behaviour per repo**: edit that repo's `AGENTS.md` / `.ai/rules/*`.
 - **Custom prompts**: add `.ai/prompts/planner.md` or `.ai/prompts/coder.md`.
 

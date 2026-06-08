@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from agent import WorkflowResult, run_workflow, work_issue
-from agent.api import AgentError, _apply_overrides, authed_remote
-from agent.config import Config
+from github_issue_agent import WorkflowResult, run_workflow, work_issue
+from github_issue_agent.api import AgentError, _apply_overrides, authed_remote
+from github_issue_agent.config import Config
 
 WORKFLOW = "# Workflow: Work Issue\n\nResolve the issue and add a note.\n"
 
@@ -100,7 +100,7 @@ def test_work_issue_is_run_workflow_wrapper(tmp_path, monkeypatch):
         captured["kwargs"] = kwargs
         return WorkflowResult(workflow=workflow, tests_passed=True)
 
-    monkeypatch.setattr("agent.api.run_workflow", fake_run_workflow)
+    monkeypatch.setattr("github_issue_agent.api.run_workflow", fake_run_workflow)
     work_issue("https://github.com/o/r/issues/1", repo_path=repo, provider="mock")
     assert captured["workflow"] == "work-issue"
     assert captured["kwargs"]["issue_url"] == "https://github.com/o/r/issues/1"
