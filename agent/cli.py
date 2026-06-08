@@ -8,36 +8,15 @@ for ``run work-issue --issue <url>``.
 from __future__ import annotations
 
 import argparse
-import glob
 import sys
 from pathlib import Path
 
 from . import __version__
-from .config import Config
-from .context import build_repo_context
-from .git_ops import commit_all, create_branch, has_changes, push, set_remote
-from .github_client import GitHubClient, GitHubError
-from .llm import LLMError, get_provider
-from .runner import run_all
-from .workflow import Agent, build_task
+from .api import AgentError, discover_workflows, run_workflow
 
 
 def _eprint(msg: str) -> None:
     print(msg, file=sys.stderr)
-
-
-def discover_workflows(repo_path: Path) -> dict[str, Path]:
-    found: dict[str, Path] = {}
-    for path in sorted(glob.glob(str(repo_path / ".ai" / "workflows" / "*.md"))):
-        p = Path(path)
-        found[p.stem] = p
-    return found
-
-
-def _authed_remote(url: str, token: str) -> str:
-    if url.startswith("https://") and "@" not in url.split("//", 1)[1].split("/", 1)[0]:
-        return url.replace("https://", f"https://x-access-token:{token}@", 1)
-    return url
 
 
 def cmd_list(args: argparse.Namespace) -> int:
@@ -57,6 +36,23 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _make_printer() -> object:
+    def on_event(kind: str, message: str) -> None:
+        if kind == "plan":
+            print("\n== Planning ==")
+            print(message)
+        elif kind == "implement" and message.startswith("attempt "):
+            print(f"\n== Implementing ({message}) ==")
+        elif kind == "implement":
+            print("Changes:\n  " + message.replace("Changes: ", "").replace(", ", "\n  "))
+        elif kind == "pr":
+            print(f"\n{message}")
+        else:
+            print(message)
+
+    return on_event
+
+
 def _run_workflow(
     *,
     repo_path: Path,
@@ -68,127 +64,30 @@ def _run_workflow(
     make_pr: bool,
     provider_override: str | None,
 ) -> int:
-    config = Config.load(repo_path)
-    if provider_override:
-        config.provider = provider_override.lower()
-
-    workflows = discover_workflows(repo_path)
-    if workflow_name not in workflows:
-        _eprint(
-            f"Unknown workflow {workflow_name!r}. Available: {', '.join(workflows) or '(none)'}"
+    try:
+        result = run_workflow(
+            workflow_name,
+            repo_path=repo_path,
+            issue_url=issue_url,
+            prompt=prompt,
+            base=base,
+            dry_run=dry_run,
+            open_pr=make_pr,
+            provider=provider_override,
+            on_event=_make_printer(),  # type: ignore[arg-type]
         )
-        return 1
-    workflow_text = workflows[workflow_name].read_text(encoding="utf-8")
-
-    issue = None
-    gh: GitHubClient | None = None
-    if issue_url or make_pr:
-        try:
-            gh = GitHubClient(config.github_token)
-        except GitHubError as exc:
-            _eprint(str(exc))
-            return 2
-    if issue_url and gh is not None:
-        issue = gh.get_issue(issue_url)
-        print(f"Fetched issue #{issue.number}: {issue.title}")
-
-    try:
-        task = build_task(issue, prompt)
-    except ValueError as exc:
+    except AgentError as exc:
         _eprint(str(exc))
         return 2
-
-    ctx = build_repo_context(repo_path, config)
-    print(f"Loaded {len(ctx.instructions)} instruction file(s), {len(ctx.rules)} rule(s).")
-
-    try:
-        provider = get_provider(config)
-    except LLMError as exc:
-        _eprint(str(exc))
-        return 2
-
-    agent = Agent(provider, config, repo_path)
-
-    print(f"\n== Planning ({config.provider}) ==")
-    plan = agent.plan(workflow_text, ctx, task)
-    print(plan.as_text())
 
     if dry_run:
         print("\n[dry-run] Stopping before making edits.")
         return 0
 
-    feedback: str | None = None
-    impl = None
-    tests_passed = True
-    test_output = ""
-    for attempt in range(1, config.max_iterations + 1):
-        print(f"\n== Implementing (attempt {attempt}/{config.max_iterations}) ==")
-        impl = agent.implement(workflow_text, ctx, task, plan, feedback=feedback)
-        from .editor import apply_edits
-
-        changed = apply_edits(repo_path, impl.edits)
-        print("Changes:\n  " + ("\n  ".join(changed) if changed else "(none)"))
-
-        commands = impl.commands or ([config.test_command] if config.test_command else [])
-        if not commands:
-            print("No test command specified; skipping test run.")
-            tests_passed = True
-            break
-        print(f"Running: {commands}")
-        results = run_all(repo_path, commands)
-        test_output = "\n\n".join(f"$ {r.command}\n{r.output}" for r in results)
-        tests_passed = all(r.ok for r in results)
-        if tests_passed:
-            print("Tests passed.")
-            break
-        print("Tests failed; will ask the model to fix.")
-        feedback = test_output[-6000:]
-
-    if impl is None:
-        _eprint("No implementation was produced.")
-        return 1
-
-    print(f"\nSummary: {impl.summary}")
-
+    print(f"\nSummary: {result.summary}")
     if not make_pr:
         print("\n[--no-pr] Leaving changes in the working tree without committing.")
-        return 0 if tests_passed else 1
-
-    if not has_changes(repo_path):
-        _eprint("No file changes to commit; aborting PR.")
-        return 1
-
-    assert gh is not None
-    import subprocess
-
-    origin = subprocess.run(
-        ["git", "remote", "get-url", "origin"],
-        cwd=repo_path,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    if not origin:
-        _eprint("Target repo has no 'origin' remote; cannot open a PR.")
-        return 1
-    owner, repo = gh.parse_repo_url(origin)
-    base_branch = base or gh.default_branch(owner, repo)
-
-    create_branch(repo_path, impl.branch)
-    commit_all(repo_path, impl.commit_message)
-    assert config.github_token is not None
-    set_remote(repo_path, _authed_remote(origin, config.github_token))
-    push(repo_path, impl.branch)
-
-    pr_url = gh.create_pull_request(
-        owner=owner,
-        repo=repo,
-        title=impl.pr_title,
-        head=impl.branch,
-        base=base_branch,
-        body=impl.pr_body,
-    )
-    print(f"\nOpened PR: {pr_url}")
-    return 0 if tests_passed else 1
+    return 0 if result.tests_passed else 1
 
 
 def build_parser() -> argparse.ArgumentParser:

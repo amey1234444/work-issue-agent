@@ -6,3 +6,13 @@ target repository's own instruction files (AGENTS.md, README.md, CONTRIBUTING.md
 """
 
 __version__ = "0.1.0"
+
+from .api import AgentError, WorkflowResult, run_workflow, work_issue
+
+__all__ = [
+    "__version__",
+    "AgentError",
+    "WorkflowResult",
+    "run_workflow",
+    "work_issue",
+]
