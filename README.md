@@ -159,6 +159,38 @@ Useful flags:
 - `--provider mock|anthropic|openai` — override the provider for one run.
 - `--base <branch>` — base branch for the PR (defaults to the repo's default branch).
 
+## Use as a library
+
+The agent is also importable, so you can drive a run from your own Python code,
+a backend service or a notebook — pass the API key and issue URL as arguments
+and it does the rest:
+
+```python
+from agent import work_issue  # distribution name: work-issue-agent
+
+result = work_issue(
+    "https://github.com/org/repo/issues/123",
+    provider="openrouter",            # "anthropic" | "openai" | "openrouter" | "mock"
+    api_key="sk-or-...",              # optional; falls back to the provider's env var
+    model="z-ai/glm-4.5-air:free",    # optional; overrides the default for the provider
+    repo_path="/path/to/local/checkout",
+    github_token="ghp_...",           # optional; falls back to GITHUB_TOKEN / GITHUB_PAT
+    open_pr=True,                     # False = apply + test only, no commit/push/PR
+)
+
+print(result.tests_passed)   # bool
+print(result.pr_url)         # str | None
+print(result.summary)        # the model's summary of what changed
+print(result.changed_files)  # list[str]
+```
+
+`work_issue(...)` is sugar for `run_workflow("work-issue", issue_url=...)`. Use
+`run_workflow(<name>, prompt=...)` to drive any other workflow (e.g. `fix-bug`,
+`add-feature`) with a free-form prompt instead of an issue. Pass an `on_event`
+callback `(kind, message)` to stream progress, or set `dry_run=True` to get just
+the plan. Unrecoverable problems raise `agent.AgentError`; everything
+else comes back on the `WorkflowResult`.
+
 ## How a run works
 
 1. **Context** (`agent/context.py`) — reads instruction files, `.ai/rules/*`, and a
