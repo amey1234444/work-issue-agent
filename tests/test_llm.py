@@ -3,8 +3,8 @@ import types
 
 import pytest
 
-from agent import llm
-from agent.config import Config
+from github_issue_agent import llm
+from github_issue_agent.config import Config
 
 
 class _FakeOpenAI:

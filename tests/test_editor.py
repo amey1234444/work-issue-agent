@@ -1,7 +1,7 @@
 import pytest
 
-from agent.editor import EditError, apply_edits
-from agent.models import FileEdit
+from github_issue_agent.editor import EditError, apply_edits
+from github_issue_agent.models import FileEdit
 
 
 def test_create_modify_delete(tmp_path):
