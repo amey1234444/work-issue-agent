@@ -29,7 +29,7 @@ class AnthropicProvider:
             import anthropic  # noqa: F401
         except ImportError as exc:  # pragma: no cover - depends on install
             raise LLMError(
-                "The 'anthropic' package is not installed. Install with: pip install 'work-issue-agent[anthropic]'"
+                "The 'anthropic' package is not installed. Install with: pip install 'github-issue-agent[anthropic]'"
             ) from exc
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
@@ -46,7 +46,10 @@ class AnthropicProvider:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        parts = [block.text for block in resp.content if getattr(block, "type", "") == "text"]
+        parts: list[str] = []
+        for block in resp.content:
+            if block.type == "text":
+                parts.append(block.text)
         return "\n".join(parts)
 
 
@@ -58,7 +61,7 @@ class OpenAIProvider:
             import openai  # noqa: F401
         except ImportError as exc:  # pragma: no cover - depends on install
             raise LLMError(
-                "The 'openai' package is not installed. Install with: pip install 'work-issue-agent[openai]'"
+                "The 'openai' package is not installed. Install with: pip install 'github-issue-agent[openai]'"
             ) from exc
         api_key = os.environ.get(api_key_env)
         if not api_key:
