@@ -78,3 +78,47 @@ def test_config_load_reads_openrouter_env(monkeypatch, tmp_path):
     cfg = Config.load(tmp_path)
     assert cfg.openrouter_model == "vendor/model:free"
     assert cfg.openrouter_base_url == "https://custom.example/api"
+
+
+class _RecordingClient:
+    """Fake OpenAI client that records create() kwargs and returns fixed text."""
+
+    def __init__(self, content="hi"):
+        self.calls: list[dict] = []
+        outer = self
+
+        class _Completions:
+            def create(self, **kwargs):
+                outer.calls.append(kwargs)
+                msg = types.SimpleNamespace(content=content)
+                choice = types.SimpleNamespace(message=msg)
+                return types.SimpleNamespace(choices=[choice])
+
+        self.chat = types.SimpleNamespace(completions=_Completions())
+
+
+def _make_provider(monkeypatch, fake_openai, base_url):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "router-key")
+    return llm.OpenAIProvider(
+        "vendor/model", api_key_env="OPENROUTER_API_KEY", base_url=base_url
+    )
+
+
+def test_complete_sets_max_tokens_and_disables_reasoning_for_openrouter(
+    monkeypatch, fake_openai
+):
+    provider = _make_provider(monkeypatch, fake_openai, "https://openrouter.ai/api/v1")
+    provider._client = _RecordingClient("result")
+    assert provider.complete("sys", "user") == "result"
+    kwargs = provider._client.calls[-1]
+    assert kwargs["max_tokens"] == 8192
+    assert kwargs["extra_body"] == {"reasoning": {"enabled": False}}
+
+
+def test_complete_omits_reasoning_for_non_openrouter(monkeypatch, fake_openai):
+    provider = _make_provider(monkeypatch, fake_openai, "https://api.openai.com/v1")
+    provider._client = _RecordingClient("result")
+    assert provider.complete("sys", "user") == "result"
+    kwargs = provider._client.calls[-1]
+    assert kwargs["max_tokens"] == 8192
+    assert "extra_body" not in kwargs

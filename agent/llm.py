@@ -67,15 +67,23 @@ class OpenAIProvider:
 
         self._client = OpenAI(api_key=api_key, base_url=base_url)
         self._model = model
+        self._base_url = base_url or ""
 
     def complete(self, system: str, user: str) -> str:
-        resp = self._client.chat.completions.create(
-            model=self._model,
-            messages=[
+        kwargs: dict = {
+            "model": self._model,
+            "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-        )
+            "max_tokens": 8192,
+        }
+        # OpenRouter exposes a `reasoning` control; disabling it stops reasoning
+        # models (e.g. GLM, Qwen3) from spending the whole budget "thinking" and
+        # returning empty content. Ignored by non-OpenRouter endpoints.
+        if "openrouter" in self._base_url:
+            kwargs["extra_body"] = {"reasoning": {"enabled": False}}
+        resp = self._client.chat.completions.create(**kwargs)
         return resp.choices[0].message.content or ""
 
 
