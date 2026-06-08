@@ -109,6 +109,17 @@ features/tests were added.)
 
 ## Install
 
+From [PyPI](https://pypi.org/project/github-issue-agent/) (recommended — works in
+**Google Colab** or any fresh environment):
+
+```bash
+pip install "github-issue-agent[openai]"      # or [anthropic] / [all]
+```
+
+Then `from github_issue_agent import work_issue` works immediately. The `[openai]`
+extra pulls the SDK used for the OpenAI **and** OpenRouter providers; the `mock`
+provider needs no extra and no key.
+
 From a local clone (for development):
 
 ```bash
@@ -118,17 +129,11 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[all]"     # or .[anthropic] / .[openai]
 ```
 
-Directly from GitHub (e.g. in **Google Colab** or any fresh environment — no
-clone needed):
+You can also install the latest unreleased code straight from GitHub:
 
 ```bash
 pip install "github-issue-agent[openai] @ git+https://github.com/amey1234444/work-issue-agent.git"
 ```
-
-Then `from github_issue_agent import work_issue` works immediately. It is **not**
-on PyPI, so install from the `git+https://...` URL above rather than
-`pip install github-issue-agent`. The `[openai]` extra pulls the SDK used for the
-OpenAI **and** OpenRouter providers; the `mock` provider needs no extra and no key.
 
 ## Configure
 
