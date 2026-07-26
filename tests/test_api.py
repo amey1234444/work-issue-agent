@@ -34,6 +34,26 @@ def test_run_workflow_mock_no_pr(tmp_path):
     # The mock provider creates AGENT_NOTES.md.
     assert any("AGENT_NOTES.md" in f for f in result.changed_files)
     assert (repo / "AGENT_NOTES.md").exists()
+    # Agent mode is the default: it works through tool calls, not a single plan.
+    assert result.mode == "agent"
+    assert any(kind == "tool" for kind, _ in events)
+    assert any(call.startswith("apply_patch") for call in result.tool_calls)
+
+
+def test_run_workflow_legacy_mode_still_plans(tmp_path):
+    repo = _make_repo(tmp_path)
+    events: list[tuple[str, str]] = []
+    result = run_workflow(
+        "work-issue",
+        repo_path=repo,
+        prompt="Add a note about contributing.",
+        provider="mock",
+        mode="workflow",
+        open_pr=False,
+        on_event=lambda k, m: events.append((k, m)),
+    )
+    assert result.mode == "workflow"
+    assert (repo / "AGENT_NOTES.md").exists()
     assert any(kind == "plan" for kind, _ in events)
 
 

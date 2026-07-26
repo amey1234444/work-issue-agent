@@ -52,6 +52,18 @@ class Config:
     instruction_files: list[str] = field(default_factory=lambda: list(DEFAULT_INSTRUCTION_FILES))
     rules_glob: str = ".ai/rules/*.md"
     test_command: str | None = None
+    #: "agent" runs the Codex-style tool loop; "workflow" the legacy plan/implement pass.
+    mode: str = "agent"
+    #: Tool calls one agent run may make before giving up.
+    max_steps: int = 60
+    #: Commands run to validate a change (and a merge resolution).
+    validation_commands: list[str] = field(default_factory=list)
+    #: Extra executables the agent may call, on top of the built-in allowlist.
+    allowed_commands: list[str] = field(default_factory=list)
+    #: Resolve conflicts with the base branch before opening a PR.
+    auto_resolve_conflicts: bool = True
+    #: Forced conflict side ("ours"/"theirs"), or None to decide per hunk.
+    conflict_preference: str | None = None
 
     @classmethod
     def load(cls, repo_path: Path) -> Config:
@@ -66,10 +78,18 @@ class Config:
         cfg.openrouter_model = os.environ.get("OPENROUTER_MODEL", cfg.openrouter_model)
         cfg.openrouter_base_url = os.environ.get("OPENROUTER_BASE_URL", cfg.openrouter_base_url)
         cfg.github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PAT")
-        try:
-            cfg.max_iterations = int(os.environ.get("AGENT_MAX_ITERATIONS", cfg.max_iterations))
-        except ValueError:
-            pass
+        cfg.mode = os.environ.get("AGENT_MODE", cfg.mode).lower()
+        for attribute, env_var in (("max_iterations", "AGENT_MAX_ITERATIONS"), ("max_steps", "AGENT_MAX_STEPS")):
+            try:
+                setattr(cfg, attribute, int(os.environ.get(env_var, getattr(cfg, attribute))))
+            except ValueError:
+                pass
+        if os.environ.get("AGENT_AUTO_RESOLVE_CONFLICTS"):
+            cfg.auto_resolve_conflicts = os.environ["AGENT_AUTO_RESOLVE_CONFLICTS"].lower() not in {
+                "0",
+                "false",
+                "no",
+            }
 
         yaml_path = repo_path / ".ai" / "config.yaml"
         if yaml_path.exists():
@@ -82,4 +102,18 @@ class Config:
                 cfg.test_command = data["test_command"]
             if isinstance(data.get("provider"), str) and "LLM_PROVIDER" not in os.environ:
                 cfg.provider = data["provider"].lower()
+            if isinstance(data.get("mode"), str) and "AGENT_MODE" not in os.environ:
+                cfg.mode = data["mode"].lower()
+            for key in ("validation_commands", "allowed_commands"):
+                if isinstance(data.get(key), list):
+                    setattr(cfg, key, [str(item) for item in data[key]])
+            if isinstance(data.get("max_steps"), int) and "AGENT_MAX_STEPS" not in os.environ:
+                cfg.max_steps = data["max_steps"]
+            if isinstance(data.get("auto_resolve_conflicts"), bool):
+                cfg.auto_resolve_conflicts = data["auto_resolve_conflicts"]
+            if isinstance(data.get("conflict_preference"), str):
+                cfg.conflict_preference = data["conflict_preference"].lower()
+
+        if not cfg.validation_commands and cfg.test_command:
+            cfg.validation_commands = [cfg.test_command]
         return cfg
