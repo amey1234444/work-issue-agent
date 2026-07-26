@@ -18,23 +18,34 @@ driven by:
 github-issue-agent work-issue https://github.com/org/repo/issues/123
 ```
 
-does exactly what you sketched out:
+runs a **continuous tool-calling loop** (the default `agent` mode):
 
 ```
-Read issue
-   ↓
-Read repo instructions (AGENTS.md, README, CONTRIBUTING, .ai/rules/*)
-   ↓
-Build a code map (file tree + selected files)
-   ↓
-Plan (LLM)
-   ↓
-Implement file edits (LLM)
-   ↓
-Run tests  ──fail──▶ feed failure back to LLM (up to N times)
-   ↓ pass
-Commit ▸ Push ▸ Open PR
+Issue + repository instructions + repository map
+             ↓
+     the model chooses a tool
+             ↓
+ search / read / find symbols / run commands
+             ↓
+   result returned into the SAME conversation
+             ↓
+     small apply_patch edits
+             ↓
+     tests + lint + type-check
+             ↓
+  failures fixed with the accumulated context
+             ↓
+   diff review + completion gate
+             ↓
+  auto-resolve conflicts with base ▸ Commit ▸ Push ▸ PR
 ```
+
+The whole repository is never dumped into the prompt. The model starts from a
+compact repository map (paths, languages, symbols, build and test files) and
+pulls in exactly the lines it needs through tools.
+
+The legacy single-shot pipeline (plan → implement whole files → test → retry) is
+still available with `--mode workflow`.
 
 ## Why this design
 
@@ -95,11 +106,11 @@ $ ruff check .
 All checks passed!
 
 $ mypy github_issue_agent
-Success: no issues found in 12 source files
+Success: no issues found in 36 source files
 
 $ pytest -q
-.......................                                                  [100%]
-23 passed in 0.16s
+........................................................................ [100%]
+75 passed in 0.39s
 ```
 
 (The screenshot below is from an earlier run; the suite has since grown as
@@ -152,6 +163,13 @@ cp .env.example .env
 | `OPENROUTER_MODEL`   | OpenRouter model slug (default `openai/gpt-oss-120b:free`)   |
 | `GITHUB_TOKEN`       | classic PAT with `repo` scope (read issues, open PR)         |
 | `AGENT_MAX_ITERATIONS` | self-correction loops on test failure (default 3)          |
+| `AGENT_MODE`         | `agent` (tool loop, default) or `workflow` (legacy)          |
+| `AGENT_MAX_STEPS`    | max tool calls per agent run (default 60)                    |
+| `AGENT_AUTO_RESOLVE_CONFLICTS` | set to `0` to disable automatic conflict resolution |
+
+`.ai/config.yaml` accepts the same knobs plus `validation_commands`,
+`allowed_commands` (extra executables the agent may run) and
+`conflict_preference` (`ours`/`theirs`).
 
 `mock` needs no API key and returns a deterministic response — handy for trying
 the pipeline end-to-end offline.
@@ -184,8 +202,56 @@ Useful flags:
 
 - `--dry-run` — plan only, make no edits (great for inspecting what the agent intends).
 - `--no-pr` — apply edits and run tests locally, but don't commit/push/open a PR.
-- `--provider mock|anthropic|openai` — override the provider for one run.
+- `--provider mock|anthropic|openai|openrouter` — override the provider for one run.
 - `--base <branch>` — base branch for the PR (defaults to the repo's default branch).
+- `--mode agent|workflow` — tool loop (default) or the legacy single-shot pipeline.
+- `--max-steps N` — cap the number of tool calls in agent mode (default 60).
+- `-v/--verbose` — print every tool call as it happens.
+
+Inspect what the agent sees before it starts:
+
+```bash
+github-issue-agent map --path /path/to/repo
+```
+
+### Merge conflicts
+
+Conflicts are detected and resolved automatically before a PR is opened, and the
+same machinery is available on its own:
+
+```bash
+# Resolve a merge/rebase that is already conflicted in your working tree
+github-issue-agent resolve-conflicts --path /path/to/repo
+
+# Merge (or rebase onto) a base branch, resolving whatever conflicts appear
+github-issue-agent resolve-conflicts --base main --strategy merge
+github-issue-agent resolve-conflicts --base main --strategy rebase --prefer theirs
+
+# Take a conflicted pull request, merge its base in, resolve, and push
+github-issue-agent fix-pr https://github.com/org/repo/pull/42 --path /path/to/repo
+```
+
+How resolution works:
+
+1. **Detect** — unmerged index entries (`git diff --name-only --diff-filter=U`)
+   plus a scan for stray conflict markers. `rerere` and `diff3` markers (which
+   include the merge base) are enabled so previous resolutions are reused and the
+   base version is available.
+2. **Deterministic strategies** — identical sides, whitespace-only differences,
+   one empty side, one side unchanged from the base, supersets, and additive
+   unions (imports, dependency lists, config entries) are resolved without an LLM.
+3. **Semantic escalation** — anything genuinely divergent (e.g. both sides changed
+   the same function body) is sent to the model with the base, both sides, and
+   surrounding context; generated lockfiles are escalated rather than guessed.
+4. **Verification** — a resolution containing conflict markers is rejected,
+   Python and JSON files must still parse, and the repository's tests/lint run
+   afterwards.
+5. **Safety** — if anything cannot be resolved or validation fails, the merge or
+   rebase is aborted and the branch is left exactly as it was. Nothing is
+   force-pushed and the merge is only committed once it is clean.
+
+Use `--no-llm` for deterministic-only resolution, `--prefer ours|theirs` to force
+a side, and `--guidance "..."` to give the model project-specific instructions.
 
 ## Use as a library
 
@@ -210,6 +276,18 @@ print(result.tests_passed)   # bool
 print(result.pr_url)         # str | None
 print(result.summary)        # the model's summary of what changed
 print(result.changed_files)  # list[str]
+print(result.tool_calls)     # every tool the agent invoked (agent mode)
+```
+
+Conflict resolution is importable too:
+
+```python
+from github_issue_agent import resolve_conflicts, fix_pull_request_conflicts
+
+result = resolve_conflicts(repo_path=".", base="main")
+print(result.fully_resolved, result.report())
+
+fix_pull_request_conflicts("https://github.com/org/repo/pull/42", repo_path=".")
 ```
 
 `work_issue(...)` is sugar for `run_workflow("work-issue", issue_url=...)`. Use
@@ -314,35 +392,64 @@ Honest limitations observed in practice:
 Clear `AGENTS.md` + `.ai/rules/*` + a capable model → clean, passing PRs. Vague
 instructions + a weak model → it may need a few iterations or a human nudge.
 
-## How a run works
+## How a run works (agent mode)
 
-1. **Context** (`github_issue_agent/context.py`) — reads instruction files, `.ai/rules/*`,
-   and a `git ls-files` file tree of the target repo.
-2. **Plan** (`github_issue_agent/workflow.py::Agent.plan`) — the LLM returns a JSON plan
-   listing the files it needs to read and the steps it will take.
-3. **Implement** (`Agent.implement`) — the agent loads the requested files and the LLM
-   returns JSON file edits + a test command + PR metadata.
-4. **Apply & test** (`github_issue_agent/editor.py`, `github_issue_agent/runner.py`) — edits
-   are applied (with a guard against escaping the repo root) and the test command runs.
-   On failure the output is fed back to the LLM, up to `AGENT_MAX_ITERATIONS`.
-5. **PR** (`github_issue_agent/git_ops.py`, `github_issue_agent/github_client.py`) — branch,
-   commit, push and open a pull request via the GitHub REST API.
+1. **Stable context** — repository instructions (`AGENTS.md`, `.ai/rules/*`), the
+   issue and its acceptance criteria, environment facts, and a repository map
+   (`github_issue_agent/repo_map.py`) of paths, languages, symbols and build files.
+   No file contents.
+2. **Tools** (`github_issue_agent/tools/`) — `list_files`, `read_file`,
+   `search_code`, `find_symbol`, `find_references`, `run_command`,
+   `read_command_output`, `apply_patch`, `get_git_diff`, `update_plan`. Every
+   output is bounded and says how to fetch more; full command logs are kept out
+   of the conversation and retrieved on demand.
+3. **Edits** (`github_issue_agent/patcher.py`) — the model sends context diffs in
+   an `*** Begin Patch` envelope, never whole files. Patches apply atomically:
+   if one hunk fails, nothing is written and the error explains why.
+4. **Validation** (`github_issue_agent/validation/`) — commands run through an
+   allowlist (no shell metacharacters, no `git push/reset/clean`), and failures
+   come back as a focused report (failing test IDs, messages, trimmed traceback)
+   instead of a wall of log output.
+5. **Completion gate** (`github_issue_agent/agent/completion_gate.py`) — the model
+   cannot declare victory: the gate checks that files changed, that validation
+   actually ran and passed, and scans the diff for skipped tests, deleted
+   assertions, blanket `# type: ignore`/`noqa` and `continue-on-error`.
+6. **Merge + PR** (`github_issue_agent/merge/`, `git_ops.py`, `github_client.py`) —
+   the base branch is merged in with automatic conflict resolution, then the
+   branch is pushed (the token is passed per-invocation and never written to
+   `.git/config`) and a PR is opened.
+
+Long runs are kept affordable by compacting older tool traffic into a summary
+while preserving the original brief and the most recent turns
+(`github_issue_agent/agent/state.py`).
 
 ## Project layout
 
 ```
 github_issue_agent/
-  api.py            # importable library API: work_issue() / run_workflow()
+  api.py            # importable library API: work_issue() / run_workflow() / resolve_conflicts()
   cli.py            # argparse entrypoint; turns .ai/workflows/*.md into commands
   config.py         # .env + env + .ai/config.yaml loading
   context.py        # gather instruction files + file tree + selected files
-  github_client.py  # fetch issues, create repos/PRs (GitHub REST)
+  repo_map.py       # lightweight map: paths, languages, symbols, build/test files
+  patcher.py        # apply_patch envelope parser + atomic applier
+  agent/            # the continuous loop
+    loop.py         #   tool execution, gating, retries
+    prompt.py       #   system instructions + initial brief
+    state.py        #   conversation state + compaction
+    completion_gate.py  # "done when" contract
+    text_protocol.py    # tool calling for complete()-only providers
+  tools/            # list_files, read_file, search_code, find_symbol, run_command,
+                    # apply_patch, get_git_diff, update_plan ...
+  validation/       # command allowlist, failure parser, anti-cheating scanner
+  merge/            # conflict parsing, deterministic strategies, resolver
+  github_client.py  # fetch issues/PRs, create repos/PRs (GitHub REST)
   llm.py            # provider abstraction: anthropic | openai | openrouter | mock
-  workflow.py       # planning/coding loop + robust JSON extraction
+  workflow.py       # legacy planning/coding loop + robust JSON extraction
   editor.py         # apply file edits safely
   runner.py         # run tests/lint and capture output
-  git_ops.py        # branch / commit / push helpers
-  models.py         # typed dataclasses (Issue, Plan, FileEdit, Implementation)
+  git_ops.py        # branch / commit / push / merge / rebase / conflict helpers
+  models.py         # typed dataclasses (Issue, PullRequest, Plan, FileEdit, ...)
 .ai/
   config.yaml       # which instruction files/rules/test command to use
   workflows/*.md    # the commands (work-issue, fix-bug, add-feature, ...)

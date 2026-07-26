@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "github-issue-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "A workflow-driven AI coding agent. Slash-style commands (work-issue, fix-bug, ...) are defined as markdown workflows in .ai/ and the repo's own instruction files are the source of truth."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -43,7 +43,13 @@ github-issue-agent = "github_issue_agent.cli:main"
 ai-agent = "github_issue_agent.cli:main"
 
 [tool.setuptools]
-packages = ["github_issue_agent"]
+packages = [
+    "github_issue_agent",
+    "github_issue_agent.agent",
+    "github_issue_agent.merge",
+    "github_issue_agent.tools",
+    "github_issue_agent.validation",
+]
 
 [tool.ruff]
 line-length = 100
