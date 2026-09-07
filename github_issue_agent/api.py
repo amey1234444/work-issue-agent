@@ -276,7 +276,7 @@ def run_workflow(
     workflow_text = workflows[workflow].read_text(encoding="utf-8")
 
     gh: GitHubClient | None = None
-    if issue_url or open_pr:
+    if issue_url or (open_pr and not dry_run):
         try:
             gh = GitHubClient(config.github_token)
         except GitHubError as exc:
