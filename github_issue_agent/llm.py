@@ -24,14 +24,14 @@ class LLMProvider(Protocol):
 
 
 class AnthropicProvider:
-    def __init__(self, model: str):
+    def __init__(self, model: str, *, api_key: str | None = None):
         try:
             import anthropic  # noqa: F401
         except ImportError as exc:  # pragma: no cover - depends on install
             raise LLMError(
                 "The 'anthropic' package is not installed. Install with: pip install 'github-issue-agent[anthropic]'"
             ) from exc
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise LLMError("ANTHROPIC_API_KEY is not set.")
         from anthropic import Anthropic
@@ -56,14 +56,21 @@ class AnthropicProvider:
 class OpenAIProvider:
     """OpenAI Chat Completions, also used for any OpenAI-compatible endpoint."""
 
-    def __init__(self, model: str, *, api_key_env: str = "OPENAI_API_KEY", base_url: str | None = None):
+    def __init__(
+        self,
+        model: str,
+        *,
+        api_key_env: str = "OPENAI_API_KEY",
+        base_url: str | None = None,
+        api_key: str | None = None,
+    ):
         try:
             import openai  # noqa: F401
         except ImportError as exc:  # pragma: no cover - depends on install
             raise LLMError(
                 "The 'openai' package is not installed. Install with: pip install 'github-issue-agent[openai]'"
             ) from exc
-        api_key = os.environ.get(api_key_env)
+        api_key = api_key or os.environ.get(api_key_env)
         if not api_key:
             raise LLMError(f"{api_key_env} is not set.")
         from openai import OpenAI
@@ -106,6 +113,7 @@ class MockProvider:
                     "steps": ["Add an AGENT_NOTES.md documenting the requested change."],
                 }
             )
+        retry = "Previous attempt failed" in user
         return json.dumps(
             {
                 "summary": "Mock implementation: documents the requested change.",
@@ -116,7 +124,7 @@ class MockProvider:
                 "edits": [
                     {
                         "path": "AGENT_NOTES.md",
-                        "action": "create",
+                        "action": "modify" if retry else "create",
                         "content": "# Agent Notes\n\nThis file was created by the mock provider to verify the end-to-end flow.\n",
                     }
                 ],
@@ -126,16 +134,23 @@ class MockProvider:
 
 
 def get_provider(config: Config) -> LLMProvider:
+    """Build the provider for ``config``.
+
+    The API key is taken from ``config.api_key`` when set (run-scoped, never
+    written to the process environment) and otherwise from the provider's
+    conventional environment variable.
+    """
     provider = config.provider
     if provider == "anthropic":
-        return AnthropicProvider(config.anthropic_model)
+        return AnthropicProvider(config.anthropic_model, api_key=config.api_key)
     if provider == "openai":
-        return OpenAIProvider(config.openai_model)
+        return OpenAIProvider(config.openai_model, api_key=config.api_key)
     if provider == "openrouter":
         return OpenAIProvider(
             config.openrouter_model,
             api_key_env="OPENROUTER_API_KEY",
             base_url=config.openrouter_base_url,
+            api_key=config.api_key,
         )
     if provider == "mock":
         return MockProvider()

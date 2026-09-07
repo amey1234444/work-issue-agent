@@ -1,16 +1,16 @@
-name: Publish to PyPI
+name: Release
 
-# Publish only when code lands on these branches. Pushes to any other branch
-# (or PRs) never publish. PyPI rejects re-uploading an existing version, so the
-# upload step uses skip-existing: a release is only actually pushed when the
-# version in pyproject.toml has been bumped; otherwise it is a harmless no-op.
+# Releases are cut from tags of the form vX.Y.Z. The tag must match the version
+# in pyproject.toml, so a release is an explicit, reviewable act rather than a
+# side effect of merging. Pushes to branches run CI only (see ci.yml).
 on:
   push:
-    branches:
-      - main
-      - master
-      - release
-      - develop
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
   test:
@@ -30,10 +30,19 @@ jobs:
         run: mypy github_issue_agent
       - name: Test
         run: pytest -q
+      - name: Tag matches package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(python -c 'import tomllib;print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          pkg="$(python -c 'import github_issue_agent;print(github_issue_agent.__version__)')"
+          test "$tag" = "$version" -a "$tag" = "$pkg" || { echo "tag v$tag != pyproject $version / package $pkg"; exit 1; }
+      - name: Changelog has an entry for this version
+        run: grep -q "^## \[${GITHUB_REF_NAME#v}\]" CHANGELOG.md
 
   publish:
     needs: test
     runs-on: ubuntu-latest
+    environment: pypi
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -47,4 +56,8 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: true
+      - name: GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
