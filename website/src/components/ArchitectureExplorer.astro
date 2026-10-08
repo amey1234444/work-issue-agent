@@ -1,0 +1,95 @@
+---
+import Icon from './Icon.astro';
+import { nodes, scenarios, getTrace } from '../scripts/architecture-data.mjs';
+const first = getTrace('success')[0];
+---
+<section class="architecture-explorer" aria-label="Interactive agent architecture" data-architecture data-active="task" data-playing="false">
+  <div class="explorer-toolbar">
+    <div class="explorer-identity"><span class="architecture-signal"></span><strong>Workflow explorer</strong><span class="explorer-version">v0.1.0</span></div>
+    <div class="explorer-select"><label for="flow-scenario">Scenario</label><select id="flow-scenario">{Object.entries(scenarios).map(([key, scenario]) => <option value={key}>{scenario.label}</option>)}</select></div>
+  </div>
+  <p class="explorer-disclaimer">Interactive illustration. No code is executed and no API calls are made.</p>
+  <div class="explorer-workspace">
+    <div class="flow-map">
+      <div class="map-caption"><span>LOCAL ORCHESTRATION</span><code>run_workflow()</code></div>
+      <div class="flow-grid">
+        <svg class="flow-wires" viewBox="0 0 600 460" preserveAspectRatio="none" aria-hidden="true">
+          <defs><marker id="wire-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="m0 0 6 3-6 3" fill="none" stroke="currentColor" /></marker></defs>
+          <path class="wire" data-edge="context" d="M225 65H375" />
+          <path class="wire" data-edge="plan" d="M475 105V139H125V183" />
+          <path class="wire" data-edge="implement" d="M225 225H375" />
+          <path class="wire" data-edge="verify" d="M475 267V303H125V343" />
+          <path class="wire" data-edge="publish" d="M225 385H375" />
+          <path class="wire retry-wire" data-edge="retry" d="M110 343V284H475V267" />
+        </svg>
+        {nodes.map((node, i) => <button class:list={['flow-node', i === 0 && 'is-current']} data-node={node.id} aria-label={`Inspect ${node.name}`} aria-pressed={i === 0 ? 'true' : 'false'}><span class="flow-node-top"><Icon name={node.icon} size={21} /><span>{node.number}</span><span class="node-complete"><Icon name="check" size={15} /></span></span><strong>{node.name}</strong><code>{node.file}</code></button>)}
+      </div>
+      <div class="provider-rail"><Icon name="globe" size={18} /><div><strong>Provider boundary</strong><span>Planning + implementation use llm.py</span></div><span class="provider-rail-names">Anthropic · OpenAI · OpenRouter · Mock</span></div>
+      <div class="flow-legend"><span><i class="legend-active"></i> Current step</span><span><i class="legend-complete"></i> Visited</span><span><i class="legend-retry"></i> Retry path</span></div>
+    </div>
+    <div class="flow-inspector" aria-live="polite" aria-atomic="true">
+      <div class="inspector-top"><span class="eyebrow">INSIDE THIS STEP</span><span id="flow-count">01 / 06</span></div>
+      <h2 id="flow-title">{first.title}</h2><p id="flow-description">{first.text}</p>
+      <dl><div><dt>Input</dt><dd id="flow-input">{first.input}</dd></div><div><dt>Output</dt><dd id="flow-output">{first.output}</dd></div></dl>
+      <div class="inspector-note"><Icon name="issue" size={18} /><p id="flow-detail">{first.detail}</p></div>
+      <a class="inspector-source" id="flow-source" href={`https://github.com/amey1234444/work-issue-agent/blob/main/github_issue_agent/${first.source}`}><Icon name="code" size={16} /><span>Read {first.source}</span></a>
+    </div>
+  </div>
+  <div class="explorer-transport"><button class="flow-play button" id="flow-play"><Icon name="play" size={16} /><span>Play walkthrough</span></button><div class="flow-navigation"><button class="button secondary" id="flow-previous" disabled>Previous</button><button class="button secondary" id="flow-next">Next step</button><button class="icon-button" id="flow-restart" aria-label="Restart walkthrough"><Icon name="restart" size={19} /></button></div><span id="flow-progress" class="mono">Step 1 of 6</span></div>
+  <div class="trace-area"><div class="trace-title"><span>ILLUSTRATED EVENT TRACE</span><span id="flow-scenario-note">{scenarios.success.note}</span></div><ol id="flow-log"><li><span>01</span><code>{first.log}</code></li></ol></div>
+  <noscript><p class="explorer-no-js">JavaScript is needed for playback. The complete flow and source map are described below.</p></noscript>
+</section>
+<script>
+  import { getTrace, scenarios, events } from '../scripts/architecture-data.mjs';
+  const root = document.querySelector<HTMLElement>('[data-architecture]')!;
+  const scenarioSelect = root.querySelector<HTMLSelectElement>('#flow-scenario')!;
+  const play = root.querySelector<HTMLButtonElement>('#flow-play')!;
+  const next = root.querySelector<HTMLButtonElement>('#flow-next')!;
+  const previous = root.querySelector<HTMLButtonElement>('#flow-previous')!;
+  interface FlowEvent { id: string; node: string; title: string; text: string; input: string; output: string; source: string; detail: string; log: string; tone?: string }
+  let trace: FlowEvent[] = getTrace('success');
+  let position = 0;
+  let timer: ReturnType<typeof setInterval> | undefined;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  function stop() { clearInterval(timer); timer = undefined; root.dataset.playing = 'false'; play.querySelector('span')!.textContent = position === trace.length - 1 ? 'Replay walkthrough' : 'Play walkthrough'; }
+  function showEvent(event: typeof trace[number], index: number) {
+    root.dataset.active = event.node; root.dataset.tone = event.tone || 'normal'; root.dataset.event = event.id;
+    const values: Record<string,string> = { 'flow-title': event.title, 'flow-description': event.text, 'flow-input': event.input, 'flow-output': event.output, 'flow-detail': event.detail, 'flow-count': index < 0 ? 'INSPECTING' : `${String(index + 1).padStart(2,'0')} / ${String(trace.length).padStart(2,'0')}` };
+    Object.entries(values).forEach(([id,text]) => root.querySelector(`#${id}`)!.textContent = text);
+    const source = root.querySelector<HTMLAnchorElement>('#flow-source')!;
+    source.href = `https://github.com/amey1234444/work-issue-agent/blob/main/github_issue_agent/${event.source}`;
+    source.querySelector('span')!.textContent = `Read ${event.source}`;
+    root.querySelectorAll<HTMLButtonElement>('[data-node]').forEach(node => {
+      const current = node.dataset.node === event.node;
+      node.classList.toggle('is-current', current); node.setAttribute('aria-pressed', String(current));
+      node.classList.toggle('is-visited', !current && trace.slice(0, position).some(item => item.node === node.dataset.node));
+    });
+    root.querySelectorAll<SVGPathElement>('[data-edge]').forEach(edge => edge.classList.toggle('is-active', edge.dataset.edge === (event.id === 'retry' ? 'retry' : event.node)));
+  }
+  function render() {
+    showEvent(trace[position], position);
+    previous.disabled = position === 0; next.disabled = position === trace.length - 1;
+    root.querySelector('#flow-progress')!.textContent = `Step ${position + 1} of ${trace.length}`;
+    const log = root.querySelector('#flow-log')!; log.replaceChildren();
+    trace.slice(0, position + 1).forEach((entry, i) => { const li = document.createElement('li'); const number = document.createElement('span'); number.textContent = String(i+1).padStart(2,'0'); const text = document.createElement('code'); text.textContent = entry.log; if (entry.tone) li.dataset.tone = entry.tone; li.append(number,text); log.append(li); });
+    if (position === trace.length - 1) stop();
+  }
+  play.addEventListener('click', () => {
+    if (timer) { stop(); return; }
+    if (position === trace.length - 1) position = 0;
+    render(); root.dataset.playing = 'true'; play.querySelector('span')!.textContent = 'Pause walkthrough';
+    timer = setInterval(() => { if (!document.hidden) { position = Math.min(position + 1, trace.length - 1); render(); } }, reduced.matches ? 6500 : 4500);
+  });
+  previous.addEventListener('click', () => { stop(); position = Math.max(0, position - 1); render(); });
+  next.addEventListener('click', () => { stop(); position = Math.min(trace.length - 1, position + 1); render(); });
+  root.querySelector('#flow-restart')!.addEventListener('click', () => { stop(); position = 0; render(); });
+  scenarioSelect.addEventListener('change', () => { stop(); trace = getTrace(scenarioSelect.value); position = 0; root.querySelector('#flow-scenario-note')!.textContent = scenarios[scenarioSelect.value as keyof typeof scenarios].note; render(); });
+  root.querySelectorAll<HTMLButtonElement>('[data-node]').forEach(button => button.addEventListener('click', () => {
+    stop(); const node = button.dataset.node!;
+    const index = trace.findIndex(event => event.node === node);
+    if (index >= 0) { position = index; render(); }
+    else { showEvent({ id: node, ...events[node as keyof typeof events] }, -1); }
+  }));
+  reduced.addEventListener('change', stop);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+</script>

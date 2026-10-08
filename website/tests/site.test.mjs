@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { searchDocs } from '../src/scripts/search.mjs';
 import { buildSetup } from '../src/scripts/setup.mjs';
+import { getTrace, nodes, scenarios } from '../src/scripts/architecture-data.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const dist = join(root, 'dist');
@@ -72,4 +73,28 @@ test('the website documents verification and credential boundaries accurately', 
   assert.match(read(join(root, 'src/content/docs/verification.md')), /PR creation is not blocked by failed tests/);
   assert.match(read(join(root, 'src/content/docs/configuration.md')), /issue URL is provided or PR creation is enabled/);
   assert.match(read(join(root, 'src/content/docs/safety.md')), /git add -A/);
+});
+
+test('architecture scenarios preserve real stopping and retry behavior', () => {
+  const nodeIds = new Set(nodes.map(node => node.id));
+  for (const name of Object.keys(scenarios)) {
+    const trace = getTrace(name);
+    assert.ok(trace.every(event => nodeIds.has(event.node)));
+    assert.ok(trace.every(event => event.input && event.output && event.source));
+  }
+  assert.ok(!getTrace('dry').some(event => ['implement', 'verify', 'publish'].includes(event.node)));
+  assert.ok(!getTrace('local').some(event => event.node === 'publish'));
+  assert.deepEqual(getTrace('retry').slice(4).map(event => event.id), ['failed', 'retry', 'verify', 'publish']);
+  assert.deepEqual(getTrace('exhausted').slice(-2).map(event => event.id), ['exhausted', 'publish']);
+  assert.ok(getTrace('skipped').some(event => event.id === 'skipped' && event.output.includes('tests_passed=True')));
+  assert.throws(() => getTrace('unavailable'));
+});
+
+test('manual, architecture, and downloadable setup resources ship in the build', () => {
+  const manual = read(join(dist, 'manual.md'));
+  assert.ok(manual.startsWith('# User manual'));
+  for (const name of ['work-issue.md', 'AGENTS.md', 'config.yaml']) assert.ok(existsSync(join(dist, 'examples', name)));
+  assert.ok(read(join(dist, 'architecture/index.html')).includes('No code is executed'));
+  assert.ok(read(join(dist, 'docs/index.html')).includes('User manual'));
+  assert.ok(manual.includes('## 14. A repeatable operating checklist'));
 });

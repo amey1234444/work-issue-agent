@@ -40,13 +40,18 @@ No LLM or GitHub API keys are needed for this website. Vercel supplies `VERCEL_P
 
 ## Content and design
 
-- `src/content/docs/`: 14 Markdown guides and reference articles.
+- `src/content/docs/`: 16 Markdown guides and reference articles, including an in-depth user manual and task recipes.
+- `src/pages/docs/index.astro`: documentation hub with learning paths and the complete reference directory.
+- `src/pages/architecture.astro`: interactive architecture explorer and system boundaries.
+- `src/scripts/architecture-data.mjs`: source-aligned educational traces for six execution scenarios.
+- `src/pages/manual.md.ts`: downloadable manual generated from the same content as the web article.
+- `public/examples/`: downloadable starter workflow, instructions, and YAML configuration.
 - `src/content.config.ts`: schema for navigation and source links.
 - `src/pages/docs/[...slug].astro`: article layout, sidebar, table of contents, previous/next navigation.
 - `src/pages/search.json.ts`: static full-text index; search runs entirely in the browser.
 - `src/components/WorkflowDemo.astro`: illustrated recorded workflow, with pause and reduced-motion support.
 - `src/components/Setup.astro`: provider/run-mode command builder.
-- `src/styles/global.css`: responsive design and light/dark themes.
+- `src/styles/global.css` and `src/styles/experience.css`: responsive design, light/dark themes, and architecture animations.
 - `src/layouts/Base.astro`: metadata, navigation, search dialog, and footer.
 
 Fonts are self-hosted through npm packages. The website makes no analytics requests and does not send search text or setup choices to a service. Theme preference is stored locally.

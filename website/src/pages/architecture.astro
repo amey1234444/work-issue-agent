@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import ArchitectureExplorer from '../components/ArchitectureExplorer.astro';
+import '../styles/experience.css';
+const boundaries = [
+  { icon: 'terminal', title: 'Local runtime', body: 'Your checkout, Python process, shell commands, and installed toolchain. Changes are made on your machine.', files: 'api.py · editor.py · runner.py' },
+  { icon: 'globe', title: 'Model provider', body: 'Planning and implementation send the selected context to your provider. Mock returns deterministic responses locally.', files: 'workflow.py · llm.py' },
+  { icon: 'github', title: 'GitHub', body: 'Issue retrieval uses the REST API. Publication uses Git push followed by the pull-request API.', files: 'github_client.py · git_ops.py' },
+];
+---
+<Base title="Architecture explorer — Work Issue Agent" description="Explore the real agent pipeline: repository context, planning, implementation, verification, failure feedback, and pull requests.">
+  <main id="main" class="architecture-page">
+    <header class="experience-heading"><a href="/docs/architecture/" class="eyebrow">THE ENGINE, EXPLAINED</a><h1>Follow the thought.<br /><span class="headline-muted">Understand the work.</span></h1><p>Step through the agent’s actual control flow.<br />Change the scenario. Inspect the inputs. See what happens next.</p><div class="experience-heading-meta"><span>Source-aligned with v0.1.0</span><span>6 stages of the workflow</span><span>6 scenarios to explore</span></div></header>
+    <ArchitectureExplorer />
+    <section class="architecture-boundaries"><div class="experience-section-heading"><span class="eyebrow">THREE CLEAR BOUNDARIES</span><h2>What runs where.</h2><p>One local orchestrator connects your repository, your model, and GitHub.</p></div><div class="boundary-grid">{boundaries.map(boundary => <article><Icon name={boundary.icon} size={25} /><h3>{boundary.title}</h3><p>{boundary.body}</p><code>{boundary.files}</code></article>)}</div></section>
+    <section class="contract-section"><div><span class="eyebrow">THE CONTRACT BETWEEN STEPS</span><h2>Structured responses.<br /><span class="muted">Concrete changes.</span></h2><p>The planner selects files and steps. The coder returns full file contents, commands, and PR metadata. Python applies the result.</p><a class="text-link" href="/docs/architecture/">Read the complete module map</a></div><div class="contract-stack"><article><span class="contract-label">PLANNER RESPONSE</span><code>{'{ understanding, files_to_read, steps }'}</code><p>A focused plan with the source files to inspect.</p></article><article><span class="contract-label">CODER RESPONSE</span><code>{'{ edits, commands, branch, pr_title, … }'}</code><p>Complete replacement content for creates and modifications.</p></article><article><span class="contract-label">WORKFLOW RESULT</span><code>{'{ tests_passed, test_output, pr_url, … }'}</code><p>A structured result to inspect in your application.</p></article></div></section>
+    <section class="architecture-caveat"><Icon name="issue" size={24} /><div><h2>Understand the result, not just the animation.</h2><p>In version 0.1.0, skipped tests report <code>tests_passed=True</code>, and a failed final attempt does not prevent PR creation. Try those scenarios above, then read the verification guide before enabling publication.</p><a href="/docs/verification/">Read verification behavior</a></div></section>
+    <section class="experience-next"><span class="eyebrow">PUT THE FLOW TO WORK</span><h2>Your repository is next.</h2><p>Follow the manual from a first mock run to a reviewed change.</p><div class="button-row"><a class="button" href="/docs/manual/">Open the user manual</a><a class="button secondary" href="/docs/python-api/">Explore the Python API</a></div></section>
+  </main>
+</Base>

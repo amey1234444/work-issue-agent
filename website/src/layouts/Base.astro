@@ -2,6 +2,7 @@
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import '../styles/global.css';
+import '../styles/experience.css';
 import Icon from '../components/Icon.astro';
 interface Props { title: string; description?: string; docs?: boolean }
 const { title, description = 'A workflow-driven AI coding agent. Turn GitHub issues into code, tests, and pull requests using your repository’s own rules.', docs = false } = Astro.props;
@@ -33,8 +34,9 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
         <a class="brand" href="/" aria-label="Work Issue Agent home"><span class="brand-mark">w</span><span>work issue<span class="brand-agent"> agent</span></span></a>
         <nav class="desktop-nav" aria-label="Main navigation">
           <a href="/#how-it-works">Product</a>
-          <a href="/docs/introduction/" aria-current={docs ? 'page' : undefined}>Documentation</a>
-          <a href="/docs/workflows/">Workflows</a>
+          <a href="/docs/" aria-current={docs ? 'page' : undefined}>Docs</a>
+          <a href="/docs/manual/">User manual</a>
+          <a href="/architecture/" aria-current={Astro.url.pathname.startsWith('/architecture') ? 'page' : undefined}>Architecture</a>
         </nav>
         <div class="nav-actions">
           <button class="search-trigger" data-search-open aria-label="Search documentation"><Icon name="search" size={16} /><span>Search docs</span><kbd>⌘ K</kbd></button>
@@ -45,14 +47,14 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
         </div>
       </div>
       <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation" hidden>
-        <a href="/#how-it-works">Product</a><a href="/docs/introduction/">Documentation</a><a href="/docs/workflows/">Workflows</a><a href={repo}>GitHub repository</a><a href="/docs/quickstart/">Get started</a>
+        <a href="/#how-it-works">Product</a><a href="/docs/">Documentation</a><a href="/docs/manual/">User manual</a><a href="/architecture/">Architecture explorer</a><a href={repo}>GitHub repository</a><a href="/docs/quickstart/">Get started</a>
       </nav>
     </header>
     <slot />
     <footer class="site-footer">
       <div class="footer-main"><div><a class="brand" href="/"><span class="brand-mark">w</span><span>work issue agent</span></a><p>From issue to implementation.<br />On your terms.</p></div>
         <div><h2>Build</h2><a href="/docs/quickstart/">Quickstart</a><a href="/docs/cli/">CLI reference</a><a href="/docs/python-api/">Python API</a></div>
-        <div><h2>Learn</h2><a href="/docs/workflows/">Workflows</a><a href="/docs/architecture/">Architecture</a><a href="/docs/troubleshooting/">Troubleshooting</a></div>
+        <div><h2>Learn</h2><a href="/docs/manual/">User manual</a><a href="/architecture/">Architecture explorer</a><a href="/docs/workflows/">Workflows</a><a href="/docs/troubleshooting/">Troubleshooting</a></div>
         <div><h2>Open source</h2><a href={repo}>GitHub</a><a href="/docs/contributing/">Contribute</a><a href={`${repo}/blob/main/LICENSE`}>MIT license</a></div>
       </div>
       <div class="footer-bottom"><span>Built by Amey Bhagwatkar. Open by design.</span><span>Python 3.10+ <span class="footer-divider">/</span> v0.1.0</span></div>

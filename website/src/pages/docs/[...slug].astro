@@ -9,9 +9,11 @@ const docs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.
 const groups = [...new Set(docs.map(d => d.data.group))];
 const index = docs.findIndex(d => d.id === doc.id);
 const previous = docs[index - 1], next = docs[index + 1];
+const readingMinutes = Math.max(1, Math.ceil((doc.body || '').split(/\s+/).length / 220));
 ---
 <Base title={`${doc.data.title} — Work Issue Agent`} description={doc.data.description} docs>
-  <div class="docs-subnav"><a href="/docs/introduction/">Documentation</a><span>/</span><span>{doc.data.title}</span><span class="docs-version">v0.1.0</span></div>
+  <div class="reading-progress" aria-hidden="true"><span></span></div>
+  <div class="docs-subnav"><a href="/docs/">Documentation</a><span>/</span><span>{doc.data.title}</span><span class="docs-version">v0.1.0</span></div>
   <div class="docs-layout">
     <aside class="docs-sidebar" aria-label="Documentation navigation">
       <details class="docs-menu" open>
@@ -21,7 +23,7 @@ const previous = docs[index - 1], next = docs[index + 1];
       <a class="sidebar-repo" href="https://github.com/amey1234444/work-issue-agent"><Icon name="github" size={17} /> Explore the source</a>
     </aside>
     <main id="main" class="doc-main">
-      <header class="doc-heading"><div class="eyebrow">{doc.data.group}</div><h1>{doc.data.title}</h1><p>{doc.data.description}</p></header>
+      <header class="doc-heading"><div class="eyebrow">{doc.data.group}</div><h1>{doc.data.title}</h1><p>{doc.data.description}</p><div class="article-tools"><span>{readingMinutes} min read</span>{doc.id === 'manual' && <a href="/manual.md" download="work-issue-agent-manual.md"><Icon name="download" size={15} /> Download manual</a>}<button id="print-article"><Icon name="file" size={15} /> Print guide</button></div></header>
       <div class="prose"><Content /></div>
       <div class="doc-source"><span>Documented against v0.1.0</span><a href={`https://github.com/amey1234444/work-issue-agent/blob/main/${doc.data.source}`}>View implementation <Icon name="code" size={15} /></a></div>
       <nav class="doc-pagination" aria-label="Previous and next articles">{previous ? <a href={`/docs/${previous.id}/`}><span>Previous</span><strong>{previous.data.title}</strong></a> : <span />}{next && <a href={`/docs/${next.id}/`}><span>Next</span><strong>{next.data.title}</strong></a>}</nav>
@@ -33,5 +35,12 @@ const previous = docs[index - 1], next = docs[index + 1];
     const query = matchMedia('(max-width: 900px)');
     function setMenu() { if (details) details.open = !query.matches; }
     setMenu(); query.addEventListener('change', setMenu);
+    document.querySelector('#print-article')?.addEventListener('click', () => window.print());
+    const progress = document.querySelector<HTMLElement>('.reading-progress span');
+    const article = document.querySelector<HTMLElement>('.doc-main');
+    let pending = false;
+    function updateProgress() { if (article && progress) { const bounds = article.getBoundingClientRect(); const total = Math.max(1, article.offsetHeight - window.innerHeight + 100); progress.style.transform = `scaleX(${Math.max(0,Math.min(1,(100-bounds.top)/total))})`; } pending = false; }
+    window.addEventListener('scroll', () => { if (!pending) { pending = true; requestAnimationFrame(updateProgress); } }, { passive: true });
+    window.addEventListener('resize', updateProgress); updateProgress();
   </script>
 </Base>

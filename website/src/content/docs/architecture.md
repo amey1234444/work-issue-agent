@@ -8,6 +8,8 @@ source: github_issue_agent/workflow.py
 
 The CLI and public Python API share the same local orchestration pipeline. Planning and implementation use the selected LLM provider; filesystem, command execution, and GitHub operations remain explicit Python modules.
 
+[Open the interactive architecture explorer](/architecture/) to step through successful runs, failures, retries, dry runs, local-only changes, and skipped verification.
+
 ## Module map
 
 | Module | Responsibility |

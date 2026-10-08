@@ -1,0 +1,8 @@
+# Save as .ai/config.yaml in the target repository.
+# Replace pytest -q with the project's actual verification command.
+instruction_files:
+  - AGENTS.md
+  - README.md
+  - CONTRIBUTING.md
+rules_glob: .ai/rules/*.md
+test_command: pytest -q
