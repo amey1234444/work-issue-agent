@@ -17,22 +17,29 @@ const steps = [{icon:'issue', label:'Read', detail:'Issue + repository context'}
   <div class="demo-footnote">Based on the repository’s recorded demo. <a href="https://github.com/amey1234444/work-issue-agent/pull/3">Inspect the real pull request</a></div>
 </div>
 <script>
+  import { animateContent, installTabIndicator, nextTabIndex } from '../scripts/motion.mjs';
   const demo = document.querySelector<HTMLElement>('#workflow-demo')!;
   const tabs = Array.from(demo.querySelectorAll<HTMLButtonElement>('[data-stage-index]'));
+  const moveStageIndicator = installTabIndicator(demo.querySelector('.stage-tabs')!);
   const statuses = ['Reading context', 'Building a plan', 'Applying changes', 'Running verification', 'Ready for review'];
   const outputs = ['Reading issue #2, repository instructions, and the file tree…', 'Plan: create CONTRIBUTING.md, follow repository conventions, run pytest.', 'Created CONTRIBUTING.md with contribution and development guidelines.', '$ pytest -q   ✓ Tests passed. Failure output would feed the next attempt.', 'Opened pull request #3: contribution guidelines, ready for human review.'];
   const pause = demo.querySelector<HTMLButtonElement>('.demo-pause')!;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let active = 0, playing = !reduced.matches, visible = true;
   function select(index: number) {
+    if (index === active) return;
+    const direction = index > active ? 1 : -1;
     active = index; demo.dataset.stage = String(index);
     tabs.forEach((tab, i) => { tab.classList.toggle('active', i === index); tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
     document.querySelector('#node-status')!.textContent = statuses[index];
     document.querySelector('#stage-output')!.textContent = outputs[index];
     document.querySelector('#stage-panel')!.setAttribute('aria-labelledby', `stage-tab-${index}`);
+    moveStageIndicator();
+    animateContent([document.querySelector('#stage-output'), document.querySelector('#node-status')], direction);
   }
   function updatePlay() { pause.setAttribute('aria-label', playing ? 'Pause workflow animation' : 'Play workflow animation'); pause.innerHTML = playing ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 4v16M16 4v16"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 4 12 8-12 8Z"/></svg>'; demo.classList.toggle('paused', !playing); }
-  tabs.forEach((tab, i) => { tab.addEventListener('click', () => { playing = false; updatePlay(); select(i); }); tab.addEventListener('keydown', e => { let index = i; if (e.key === 'ArrowRight') index = (i + 1) % tabs.length; else if (e.key === 'ArrowLeft') index = (i - 1 + tabs.length) % tabs.length; else if (e.key === 'Home') index = 0; else if (e.key === 'End') index = tabs.length - 1; else return; e.preventDefault(); playing = false; updatePlay(); select(index); tabs[index].focus(); }); });
+  tabs.forEach((tab, i) => { tab.addEventListener('click', () => { playing = false; updatePlay(); select(i); }); tab.addEventListener('keydown', e => { const index = nextTabIndex(e.key, i, tabs.length); if (index === null) return; e.preventDefault(); playing = false; updatePlay(); select(index); tabs[index].focus(); }); });
+  demo.addEventListener('focusin', event => { if (!pause.contains(event.target as Node)) { playing = false; updatePlay(); } });
   pause.addEventListener('click', () => { playing = !playing; updatePlay(); });
   reduced.addEventListener('change', () => { if (reduced.matches) { playing = false; updatePlay(); } });
   if ('IntersectionObserver' in window) new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }).observe(demo);

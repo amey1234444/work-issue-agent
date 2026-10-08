@@ -1,0 +1,67 @@
+/* Motion has a hierarchy: surface emphasis, interactive lift, and directional state changes. */
+:root { --motion-fast: 160ms; --motion-base: 260ms; --motion-slow: 380ms; --motion-ease: cubic-bezier(.22,1,.36,1); }
+:is(.button,.icon-button,.search-trigger,.install-line,.release-pill,.docs-home-search,.code-copy,.article-tools a,.article-tools button,select,summary) {
+  transition: color var(--motion-fast),background var(--motion-fast),border-color var(--motion-base),box-shadow var(--motion-base),transform var(--motion-base) var(--motion-ease);
+}
+:is(.feature,.learning-card,.doc-link-grid > a,.doc-pagination a,.flow-node,.boundary-grid article,.contract-stack article,.docs-directory section,.template-banner,.architecture-caveat,.studio-task,.studio-plan,.studio-code,.pipeline-card,.repo-window,.interface-card,.setup-card,.engine-preview) {
+  transition: opacity var(--motion-slow),border-color var(--motion-base),box-shadow var(--motion-base),background var(--motion-base),transform var(--motion-slow) var(--motion-ease);
+}
+:is(.desktop-nav a,.sidebar-group a,.toc a,.docs-directory a,.search-result,.footer-main a,.text-link,.feature a,.engine-manual-link,.inspector-source) {
+  transition: color var(--motion-fast),background var(--motion-fast),border-color var(--motion-fast),transform var(--motion-base) var(--motion-ease);
+}
+:is(.button,.brand,.doc-link-grid > a,.docs-directory a,.learning-card,.feature,.article-tools a,.text-link,.inspector-source) svg {
+  transition: transform var(--motion-base) var(--motion-ease),opacity var(--motion-fast);
+}
+.desktop-nav a::before { content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--fg);transform:scaleX(0);transform-origin:left;transition:transform var(--motion-base) var(--motion-ease); }
+.desktop-nav a[aria-current]::before { display:none; }
+:is(.feature,.learning-card,.doc-link-grid > a,.doc-pagination a,.docs-directory section):focus-within { border-color:var(--fg);box-shadow:0 0 0 1px var(--line-strong); }
+:is(.button,.icon-button,.search-trigger,.install-line,.stage-tab,.interface-tabs button,.flow-node):active:not(:disabled) { transform:translateY(1px) scale(.985); }
+.button:disabled { transform:none;box-shadow:none; }
+@media (hover:hover) and (pointer:fine) {
+  :is(.feature,.learning-card,.doc-link-grid > a,.doc-pagination a,.flow-node):hover { transform:translateY(-3px);border-color:var(--fg);box-shadow:0 10px 30px #00000015; }
+  :is(.boundary-grid article,.contract-stack article,.docs-directory section,.template-banner,.architecture-caveat,.studio-task,.studio-plan,.studio-code,.pipeline-card,.repo-window,.interface-card,.setup-card):hover { border-color:var(--line-strong);box-shadow:0 6px 24px #00000012; }
+  .engine-preview:hover { border-color:#777777;box-shadow:0 14px 40px #00000035; }
+  .button:hover:not(:disabled) { transform:translateY(-2px); }.button:hover > svg:last-child { transform:translateX(2px); }
+  :is(.icon-button,.search-trigger,.install-line,.docs-home-search,.code-copy,.article-tools a,.article-tools button):hover { background:var(--hover);border-color:var(--fg);transform:translateY(-1px); }
+  .setup-terminal .icon-button:hover { background:#303030; }
+  .brand:hover .patchlane-logo { transform:rotate(-7deg) scale(1.06); }
+  .desktop-nav a:hover::before { transform:scaleX(1); }
+  :is(.sidebar-group a,.toc a,.docs-directory a,.search-result,.footer-main > div:not(:first-child) > a):hover { transform:translateX(3px);color:var(--fg); }
+  :is(.doc-link-grid > a,.docs-directory a):hover > svg:last-child { transform:translateX(3px); }
+  .learning-card:hover .learning-link svg,.feature:hover > a svg { transform:translateX(4px); }
+  .feature:hover .feature-top > svg { transform:translateY(-2px); }
+  .faq-list summary:hover { color:var(--fg);background:var(--subtle); }.faq-list summary:hover .faq-plus { opacity:.6; }
+  select:hover { border-color:var(--fg); }.release-pill:hover { color:var(--fg); }
+}
+/* One indicator travels between tabs; it never captures clicks or keyboard focus. */
+.has-tab-motion { position:relative;isolation:isolate; }
+.tab-indicator { position:absolute;inset:0 auto auto 0;z-index:0;pointer-events:none;border-radius:5px;background:var(--accent-soft);border:1px solid var(--line-strong); }
+.tab-motion-ready .tab-indicator { transition:transform var(--motion-slow) var(--motion-ease),width var(--motion-slow) var(--motion-ease),height var(--motion-base); }
+.has-tab-motion [role='tab'] { position:relative;z-index:1;transition:color var(--motion-fast),background var(--motion-fast); }
+.interface-tabs.has-tab-motion button.active { background:transparent; }
+.stage-tabs.has-tab-motion .stage-tab.active::after { display:none; }
+.stage-tabs .tab-indicator { background:transparent;border:0;border-bottom:2px solid var(--fg);border-radius:0; }
+.stage-tab { border-radius:5px 5px 0 0; }
+.stage-tabs [role='tab']:hover,.interface-tabs [role='tab']:hover { color:var(--fg);background:color-mix(in srgb,var(--fg),transparent 96%); }
+.interface-code { display:grid;grid-template-areas:'panel';align-items:start; }
+.interface-code > [role='tabpanel'] { grid-area:panel;min-width:0; }
+/* Keep both panels in the sizing grid; only the active one is exposed or focusable. */
+@layer reset {
+  .interface-code > [role='tabpanel'][hidden] { display:block !important;visibility:hidden;pointer-events:none; }
+}
+.interface-copy { min-height:330px; }.interface-code { overflow:hidden; }
+#stage-output { display:inline-block; }.demo-output { overflow:hidden; }
+.flow-inspector { overflow:hidden; }.inspector-note { position:relative; }
+.flow-node:focus-visible { outline:2px solid var(--fg);outline-offset:4px; }
+.faq-list details[open] > p { animation:disclosure-enter var(--motion-base) var(--motion-ease); }
+.mobile-nav:not([hidden]) { animation:disclosure-enter var(--motion-base) var(--motion-ease); }
+.search-dialog[open] { animation:dialog-enter 220ms var(--motion-ease); }
+@keyframes disclosure-enter { from { opacity:0;transform:translateY(-5px); } to { opacity:1;transform:translateY(0); } }
+@keyframes dialog-enter { from { opacity:0;transform:translateY(-8px) scale(.985); } to { opacity:1;transform:translateY(0) scale(1); } }
+@media (max-width:600px) { .interface-copy { min-height:310px; }.stage-tabs { min-width:0; }.stage-tab { white-space:nowrap; } }
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation:none !important;transition:none !important;scroll-behavior:auto !important; }
+  :is(.button,.icon-button,.feature,.learning-card,.doc-link-grid > a,.doc-pagination a,.flow-node,.sidebar-group a,.toc a,.docs-directory a,.search-result,.footer-main a,.brand svg):hover { transform:none !important; }
+}
+/* Tab geometry stays fixed while the indicator moves, including during pointer presses. */
+.has-tab-motion [role='tab']:active { transform:none; }

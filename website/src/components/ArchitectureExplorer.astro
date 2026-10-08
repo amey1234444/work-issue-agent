@@ -40,6 +40,7 @@ const first = getTrace('success')[0];
   <noscript><p class="explorer-no-js">JavaScript is needed for playback. The complete flow and source map are described below.</p></noscript>
 </section>
 <script>
+  import { animateContent } from '../scripts/motion.mjs';
   import { getTrace, scenarios, events } from '../scripts/architecture-data.mjs';
   const root = document.querySelector<HTMLElement>('[data-architecture]')!;
   const scenarioSelect = root.querySelector<HTMLSelectElement>('#flow-scenario')!;
@@ -53,9 +54,13 @@ const first = getTrace('success')[0];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   function stop() { clearInterval(timer); timer = undefined; root.dataset.playing = 'false'; play.querySelector('span')!.textContent = position === trace.length - 1 ? 'Replay walkthrough' : 'Play walkthrough'; }
   function showEvent(event: typeof trace[number], index: number) {
+    const changed = root.dataset.event !== event.id;
+    const direction = index >= Number(root.dataset.position || 0) ? 1 : -1;
+    root.dataset.position = String(index);
     root.dataset.active = event.node; root.dataset.tone = event.tone || 'normal'; root.dataset.event = event.id;
     const values: Record<string,string> = { 'flow-title': event.title, 'flow-description': event.text, 'flow-input': event.input, 'flow-output': event.output, 'flow-detail': event.detail, 'flow-count': index < 0 ? 'INSPECTING' : `${String(index + 1).padStart(2,'0')} / ${String(trace.length).padStart(2,'0')}` };
     Object.entries(values).forEach(([id,text]) => root.querySelector(`#${id}`)!.textContent = text);
+    if (changed) animateContent([root.querySelector('#flow-title'), root.querySelector('#flow-description'), root.querySelector('.flow-inspector dl'), root.querySelector('.inspector-note')], direction);
     const source = root.querySelector<HTMLAnchorElement>('#flow-source')!;
     source.href = `https://github.com/amey1234444/work-issue-agent/blob/main/github_issue_agent/${event.source}`;
     source.querySelector('span')!.textContent = `Read ${event.source}`;

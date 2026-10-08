@@ -80,8 +80,11 @@ print(result.summary, result.test_output)</pre></div></div></div></section>
     <section class="closing-cta page-grid"><div class="closing-logo"><Logo size={52} /></div><span class="eyebrow">OPEN SOURCE. IN YOUR HANDS.</span><h2>Your next idea.<br /> <span class="hero-accent">A little closer to shipped.</span></h2><div class="button-row"><a href="/docs/quickstart/" class="button">Start building</a><a href={repo} class="button secondary"><Icon name="github" size={17} /> View the source</a></div><p>MIT licensed. Built to be understood and extended.</p></section>
   </main>
   <script>
+    import { animateContent, installTabIndicator, nextTabIndex } from '../scripts/motion.mjs';
+    const moveInterfaceIndicator = installTabIndicator(document.querySelector('.interface-tabs')!);
     const interfaceTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-interface]'));
     function selectInterface(tab: HTMLButtonElement) {
+      if (tab.getAttribute('aria-selected') === 'true') return;
       const python = tab.dataset.interface === 'python';
       interfaceTabs.forEach(t => { const active = t === tab; t.classList.toggle('active', active); t.setAttribute('aria-selected', String(active)); t.tabIndex = active ? 0 : -1; });
       document.querySelector<HTMLElement>('#interface-cli')!.hidden = python;
@@ -89,7 +92,9 @@ print(result.summary, result.test_output)</pre></div></div></div></section>
       document.querySelector('#interface-title')!.textContent = python ? 'Your agent, in your application.' : 'An issue. A single command.';
       document.querySelector('#interface-description')!.textContent = python ? 'Call a workflow from Python and receive a structured result. Stream progress through a callback and inspect the plan, edits, and verification output.' : 'Point the agent at a local checkout and a GitHub issue. Preview the plan, keep changes local, or let it open a pull request.';
       const link = document.querySelector<HTMLAnchorElement>('#interface-link')!; link.href = python ? '/docs/python-api/' : '/docs/cli/'; link.textContent = python ? 'Explore the Python API' : 'Explore the CLI reference';
+      moveInterfaceIndicator();
+      animateContent([document.querySelector(python ? '#interface-python' : '#interface-cli'), document.querySelector('#interface-title'), document.querySelector('#interface-description')], python ? 1 : -1);
     }
-    interfaceTabs.forEach((tab, i) => { tab.addEventListener('click', () => selectInterface(tab)); tab.addEventListener('keydown', event => { if (['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? interfaceTabs[0] : event.key === 'End' ? interfaceTabs[1] : interfaceTabs[1-i]; selectInterface(next); next.focus(); } }); });
+    interfaceTabs.forEach((tab, i) => { tab.addEventListener('click', () => selectInterface(tab)); tab.addEventListener('keydown', event => { const index = nextTabIndex(event.key, i, interfaceTabs.length); if (index !== null) { event.preventDefault(); const next = interfaceTabs[index]; selectInterface(next); next.focus(); } }); });
   </script>
 </Base>

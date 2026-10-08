@@ -8,6 +8,7 @@ import Icon from './Icon.astro';
   --provider openai --path ./target-repo --dry-run --no-pr</pre></div><div class="setup-requirements" aria-live="polite"><Icon name="file" size={17} /><p id="setup-hint">Requires OPENAI_API_KEY and a target checkout containing .ai/workflows/work-issue.md. Planning makes model calls but does not edit files.</p></div></div>
 </div>
 <script>
+  import { animateContent } from '../scripts/motion.mjs';
   import { buildSetup } from '../scripts/setup.mjs';
   import { notify } from '../scripts/site';
   const provider = document.querySelector<HTMLSelectElement>('#setup-provider')!;
@@ -19,6 +20,7 @@ import Icon from './Icon.astro';
     const key = { openai: 'OPENAI_API_KEY', anthropic: 'ANTHROPIC_API_KEY', openrouter: 'OPENROUTER_API_KEY', mock: 'no model API key' }[provider.value];
     const effect = mode.value === 'plan' ? (provider.value === 'mock' ? 'Mock planning stays local and does not edit files.' : 'Planning makes model calls but does not edit files.') : mode.value === 'local' ? 'Applies edits and runs configured checks without pushing.' : 'Also requires GITHUB_TOKEN, a clean Git checkout, and an origin remote. Review verification behavior before use.';
     document.querySelector('#setup-hint')!.textContent = `Requires ${key} and a target checkout containing .ai/workflows/work-issue.md. ${effect}`;
+    animateContent([document.querySelector('.setup-code'), document.querySelector('#setup-hint')]);
   }
   provider.addEventListener('change', update); mode.addEventListener('change', update);
   document.querySelector('.setup-copy')?.addEventListener('click', async () => { const { install, run } = buildSetup(provider.value, mode.value); try { await navigator.clipboard.writeText(`${install}\n\n${run}`); notify('Setup commands copied'); } catch { notify('Select and copy the commands manually.'); } });
