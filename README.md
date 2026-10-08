@@ -152,6 +152,33 @@ cp .env.example .env
 | `OPENROUTER_MODEL`   | OpenRouter model slug (default `openai/gpt-oss-120b:free`)   |
 | `GITHUB_TOKEN`       | classic PAT with `repo` scope (read issues, open PR)         |
 | `AGENT_MAX_ITERATIONS` | self-correction loops on test failure (default 3)          |
+| `AGENT_DEADLINE_SECONDS` | wall-clock budget for a whole run (default 3600)         |
+| `AGENT_COMMAND_TIMEOUT` | per-command timeout for checks (default 1800)             |
+
+Provider and GitHub credentials are **run-scoped**: they are read into the run's
+configuration and never written back into the process environment, never placed
+in command lines or `.git/config`, and are stripped from the environment of every
+command the agent executes (anything that looks like `*TOKEN*`, `*SECRET*`,
+`*API_KEY*`, `*PASSWORD*`, ... is removed).
+
+Repo-level settings live in `.ai/config.yaml` (scaffold it with `ai-agent init`):
+
+```yaml
+provider: openrouter
+test_command: pytest -q          # required check
+checks:                          # more required checks; all must pass on the final tree
+  - ruff check .
+  - mypy src
+require_validation: true         # refuse to open a PR unless every required check passed
+draft_pr: true                   # open PRs as drafts
+protected_paths: ["deploy/**"]   # in addition to .git, .env*, keys, credentials, ...
+protected_branches: [main, master, develop, release]
+deadline_seconds: 3600
+command_timeout: 1800
+```
+
+Required checks come from the repository, never from the model: commands the model
+suggests are run in addition to them and can never replace them.
 
 `mock` needs no API key and returns a deterministic response — handy for trying
 the pipeline end-to-end offline.
@@ -180,12 +207,42 @@ Run any workflow with a free-form prompt instead of an issue:
 github-issue-agent run add-feature --prompt "Add a --json flag to the export command" --path .
 ```
 
+Scaffold `.ai/` in a new repo and check the environment:
+
+```bash
+ai-agent init --path /path/to/repo
+ai-agent doctor --path /path/to/repo      # python, git, origin, workflows, config, tools, keys
+```
+
 Useful flags:
 
 - `--dry-run` — plan only, make no edits (great for inspecting what the agent intends).
-- `--no-pr` — apply edits and run tests locally, but don't commit/push/open a PR.
-- `--provider mock|anthropic|openai` — override the provider for one run.
+- `--no-pr` — apply edits and run checks in an isolated worktree, but don't commit/push/open a PR.
+- `--json` — print a machine-readable result (or a structured error) on stdout; progress goes to stderr.
+- `--provider mock|anthropic|openai|openrouter`, `--model <name>` — override for one run.
 - `--base <branch>` — base branch for the PR (defaults to the repo's default branch).
+- `--allow-unvalidated` — open a PR even if validation did not pass (not recommended; the PR body still shows the real status).
+- `--no-isolate` — edit the checkout in place instead of a disposable worktree (not recommended).
+
+### Exit codes
+
+| Code | Meaning                                   |
+|------|-------------------------------------------|
+| 0    | success                                   |
+| 1    | validation failed / not authoritative      |
+| 2    | configuration error                       |
+| 3    | authentication error                      |
+| 4    | LLM provider error                        |
+| 5    | workspace / git conflict                  |
+| 6    | publication (push / PR) error             |
+| 7    | cancelled (SIGINT/SIGTERM)                |
+| 8    | budget exhausted (deadline / iterations)  |
+| 9    | internal error                            |
+
+With `--json`, errors are printed as `{"error", "code", "phase", "retryable", "recovery"}`
+so callers can act on them. Every run also writes a checkpoint to
+`.agent_work/<run_id>.json` in the target repo (add `.agent_work/` to `.gitignore`;
+`ai-agent init` does this for you).
 
 ## Use as a library
 
@@ -293,9 +350,37 @@ So the loop is **Plan → Implement (code + tests) → Test → self-correct →
 tests are how the agent checks its *own* implementation; they are not the deliverable
 by themselves.
 
-**A run is considered successful when** the code compiles/runs, the test command
-exits 0, and (if `open_pr=True`) a PR is opened. `WorkflowResult` reports
-`tests_passed`, `pr_url`, `summary`, `changed_files`, `plan`, and `branch`.
+**A run is considered successful when** every *required* check configured by the
+repository (`test_command` + `checks`) ran on the exact final tree and exited 0, and
+(if `open_pr=True`) a PR was opened. `WorkflowResult` reports `status`, `run_id`,
+`validation` (per-check status, exit code, argv, duration, output and the tree hash
+it ran against), `changes` (created/modified/deleted files with hashes), `branch`,
+`commit`, `pr_url`, `workspace`, plus the legacy `tests_passed`/`changed_files`.
+
+Validation is **fail-closed**: a PR is only opened when validation status is
+`passed`. `failed`, `not_run` (no checks configured), `blocked` (tool missing),
+`skipped` or `stale` (the tree changed after the checks ran) all refuse to publish
+and explain how to recover. The evidence table is included in the PR body.
+
+**Safety guarantees.**
+- The agent never edits your checkout: each run works in a disposable `git worktree`
+  under `.agent_work/<run_id>/` on its own branch. Your current branch, staged and
+  unstaged changes and untracked files are untouched. Successful runs clean the
+  worktree up; failed runs leave it for inspection.
+- File edits are transactional: if any edit fails, all files are restored byte-for-byte
+  (including modes and directories the edit created). Absolute paths, `..`, symlink
+  escapes, `.git/`, `.env*`, keys and credential files are refused.
+- Only the files the agent changed are staged and committed — never `git add -A`.
+- Model-chosen branch names are validated; protected branches (`main`, `master`, ...)
+  and existing branches are never reused, a unique `agent/...` name is picked instead.
+- Commands run without a shell, with a scrubbed environment (no tokens), bounded
+  output, a per-command timeout and a run deadline; the whole process group is
+  killed on timeout or Ctrl-C.
+- Pushes use a one-shot credential helper; the token is never written to argv,
+  the remote URL or `.git/config`. PR creation is idempotent (an existing open PR for
+  the same branch is reused).
+- The issue's repository must match the checkout's `origin` (override with
+  `allow_repo_mismatch=True`).
 
 **What it is *not*.** It is not magic and not deterministic — output quality depends
 on (a) the **model** you pick and (b) the **quality of the repo's `.ai/` rules**.
@@ -322,11 +407,14 @@ instructions + a weak model → it may need a few iterations or a human nudge.
    listing the files it needs to read and the steps it will take.
 3. **Implement** (`Agent.implement`) — the agent loads the requested files and the LLM
    returns JSON file edits + a test command + PR metadata.
-4. **Apply & test** (`github_issue_agent/editor.py`, `github_issue_agent/runner.py`) — edits
-   are applied (with a guard against escaping the repo root) and the test command runs.
-   On failure the output is fed back to the LLM, up to `AGENT_MAX_ITERATIONS`.
-5. **PR** (`github_issue_agent/git_ops.py`, `github_issue_agent/github_client.py`) — branch,
-   commit, push and open a pull request via the GitHub REST API.
+4. **Apply & validate** (`editor.py`, `validation.py`, `runner.py`) — edits are applied
+   transactionally inside a disposable worktree (`workspace.py`) under a path policy
+   (`paths.py`); every required check runs on the final tree and its evidence (argv,
+   exit code, output, tree hash) is recorded. On failure the output is fed back to the
+   LLM, up to `AGENT_MAX_ITERATIONS`, and the change manifest is carried across retries.
+5. **PR** (`git_ops.py`, `github_client.py`) — only if validation passed: stage exactly the
+   manifest, commit, push with a one-shot credential helper and open (or reuse) a PR that
+   includes the validation evidence.
 
 ## Project layout
 
@@ -339,9 +427,13 @@ github_issue_agent/
   github_client.py  # fetch issues, create repos/PRs (GitHub REST)
   llm.py            # provider abstraction: anthropic | openai | openrouter | mock
   workflow.py       # planning/coding loop + robust JSON extraction
-  editor.py         # apply file edits safely
-  runner.py         # run tests/lint and capture output
-  git_ops.py        # branch / commit / push helpers
+  editor.py         # transactional file edits with rollback + change manifest
+  paths.py          # shared path policy (root escape, symlinks, protected files)
+  validation.py     # required checks, statuses, evidence, tree hashes
+  runner.py         # shell-free command execution: scrubbed env, timeouts, cancel
+  workspace.py      # disposable git worktrees so the developer checkout is untouched
+  git_ops.py        # branch validation, scoped staging, credential-safe push
+  errors.py         # typed errors, stable codes and exit codes
   models.py         # typed dataclasses (Issue, Plan, FileEdit, Implementation)
 .ai/
   config.yaml       # which instruction files/rules/test command to use
