@@ -1,0 +1,25 @@
+---
+import Icon from './Icon.astro';
+---
+<div class="setup-card" id="setup-builder">
+  <div class="setup-config"><span class="eyebrow">YOUR FIRST RUN</span><h3>Make it your workflow.</h3><p>Choose a provider and how far the agent should go.</p><label for="setup-provider">Model provider</label><select id="setup-provider"><option value="openai">OpenAI</option><option value="anthropic">Anthropic</option><option value="openrouter">OpenRouter</option><option value="mock">Mock · no model key</option></select><label for="setup-mode">Run mode</label><select id="setup-mode"><option value="plan">Preview the plan</option><option value="local">Apply and test locally</option><option value="pr">Open a pull request</option></select><a class="text-link" href="/docs/quickstart/">Follow the complete quickstart</a></div>
+  <div class="setup-terminal"><div class="terminal-title"><span class="terminal-dots"><i></i><i></i><i></i></span><span>terminal</span><button class="icon-button setup-copy" aria-label="Copy setup commands"><Icon name="copy" size={16} /></button></div><div class="setup-code"><span class="code-comment"># 01 / Install the agent</span><pre id="setup-install">python -m pip install "github-issue-agent[openai]"</pre><span class="code-comment"># 02 / Run your workflow</span><pre id="setup-run">github-issue-agent run work-issue \
+  --prompt "Add a regression test for empty input" \
+  --provider openai --path ./target-repo --dry-run --no-pr</pre></div><div class="setup-requirements" aria-live="polite"><Icon name="file" size={17} /><p id="setup-hint">Requires OPENAI_API_KEY and a target checkout containing .ai/workflows/work-issue.md. Planning makes model calls but does not edit files.</p></div></div>
+</div>
+<script>
+  import { buildSetup } from '../scripts/setup.mjs';
+  import { notify } from '../scripts/site';
+  const provider = document.querySelector<HTMLSelectElement>('#setup-provider')!;
+  const mode = document.querySelector<HTMLSelectElement>('#setup-mode')!;
+  function update() {
+    const commands = buildSetup(provider.value, mode.value);
+    document.querySelector('#setup-install')!.textContent = commands.install;
+    document.querySelector('#setup-run')!.textContent = commands.run;
+    const key = { openai: 'OPENAI_API_KEY', anthropic: 'ANTHROPIC_API_KEY', openrouter: 'OPENROUTER_API_KEY', mock: 'no model API key' }[provider.value];
+    const effect = mode.value === 'plan' ? (provider.value === 'mock' ? 'Mock planning stays local and does not edit files.' : 'Planning makes model calls but does not edit files.') : mode.value === 'local' ? 'Applies edits and runs configured checks without pushing.' : 'Also requires GITHUB_TOKEN, a clean Git checkout, and an origin remote. Review verification behavior before use.';
+    document.querySelector('#setup-hint')!.textContent = `Requires ${key} and a target checkout containing .ai/workflows/work-issue.md. ${effect}`;
+  }
+  provider.addEventListener('change', update); mode.addEventListener('change', update);
+  document.querySelector('.setup-copy')?.addEventListener('click', async () => { const { install, run } = buildSetup(provider.value, mode.value); try { await navigator.clipboard.writeText(`${install}\n\n${run}`); notify('Setup commands copied'); } catch { notify('Select and copy the commands manually.'); } });
+</script>

@@ -1,0 +1,40 @@
+---
+import Icon from './Icon.astro';
+const steps = [{icon:'issue', label:'Read', detail:'Issue + repository context'}, {icon:'layers',label:'Plan',detail:'A focused implementation plan'}, {icon:'code',label:'Implement',detail:'Code changes + tests'}, {icon:'check',label:'Verify',detail:'Run checks. Iterate on failures.'}, {icon:'branch',label:'Pull request',detail:'A change ready for review'}];
+---
+<div class="workflow-demo" id="workflow-demo" data-stage="0">
+  <div class="demo-topline"><span><span class="small-square"></span> THE ISSUE → PR PIPELINE</span><span class="demo-caption">Illustrated workflow</span></div>
+  <div class="pipeline-canvas">
+    <div class="pipeline-card issue-card"><div class="pipeline-card-top"><span class="issue-symbol"><Icon name="issue" size={18} /></span><span>GitHub issue</span><span class="muted">#2</span></div><strong>Add contribution<br />guidelines</strong><div class="issue-tags"><span>documentation</span><span>good first issue</span></div><div class="issue-card-bottom"><span class="mini-avatar">A</span><span>work-issue-agent</span></div></div>
+    <div class="connection connection-in"><span></span><i></i></div>
+    <div class="agent-node"><div class="node-orbit"></div><div class="node-face"><span class="brand-mark">w</span></div><span class="node-label">WORK ISSUE AGENT</span><span class="node-status" id="node-status">Reading context</span></div>
+    <div class="connection connection-out"><span></span><i></i></div>
+    <div class="pipeline-card pr-card"><div class="pipeline-card-top"><span class="pr-symbol"><Icon name="branch" size={18} /></span><span>Pull request</span><span class="muted">#3</span></div><strong>Contribution guidelines,<br />ready for review.</strong><div class="diff-summary"><span>+ CONTRIBUTING.md</span></div><div class="pr-card-bottom"><span><Icon name="check" size={14} /> Checks passed</span><span class="pr-open">Open</span></div></div>
+  </div>
+  <div class="demo-controls"><div class="stage-tabs" role="tablist" aria-label="Explore the agent workflow">{steps.map((step, i) => <button id={`stage-tab-${i}`} class:list={['stage-tab', i === 0 && 'active']} role="tab" aria-selected={i === 0 ? 'true' : 'false'} aria-controls="stage-panel" tabindex={i === 0 ? 0 : -1} data-stage-index={i}><span class="stage-number">0{i + 1}</span><Icon name={step.icon} size={16} /><span>{step.label}</span></button>)}</div><button class="demo-pause icon-button" aria-label="Pause workflow animation"><Icon name="pause" size={16} /></button></div>
+  <div class="demo-output" id="stage-panel" role="tabpanel" aria-labelledby="stage-tab-0" tabindex="0"><span class="terminal-prompt">$</span><span id="stage-output">Reading issue #2, repository instructions, and the file tree…</span><span class="terminal-cursor"></span></div>
+  <div class="demo-footnote">Based on the repository’s recorded demo. <a href="https://github.com/amey1234444/work-issue-agent/pull/3">Inspect the real pull request</a></div>
+</div>
+<script>
+  const demo = document.querySelector<HTMLElement>('#workflow-demo')!;
+  const tabs = Array.from(demo.querySelectorAll<HTMLButtonElement>('[data-stage-index]'));
+  const statuses = ['Reading context', 'Building a plan', 'Applying changes', 'Running verification', 'Ready for review'];
+  const outputs = ['Reading issue #2, repository instructions, and the file tree…', 'Plan: create CONTRIBUTING.md, follow repository conventions, run pytest.', 'Created CONTRIBUTING.md with contribution and development guidelines.', '$ pytest -q   ✓ Tests passed. Failure output would feed the next attempt.', 'Opened pull request #3: contribution guidelines, ready for human review.'];
+  const pause = demo.querySelector<HTMLButtonElement>('.demo-pause')!;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let active = 0, playing = !reduced.matches, visible = true;
+  function select(index: number) {
+    active = index; demo.dataset.stage = String(index);
+    tabs.forEach((tab, i) => { tab.classList.toggle('active', i === index); tab.setAttribute('aria-selected', String(i === index)); tab.tabIndex = i === index ? 0 : -1; });
+    document.querySelector('#node-status')!.textContent = statuses[index];
+    document.querySelector('#stage-output')!.textContent = outputs[index];
+    document.querySelector('#stage-panel')!.setAttribute('aria-labelledby', `stage-tab-${index}`);
+  }
+  function updatePlay() { pause.setAttribute('aria-label', playing ? 'Pause workflow animation' : 'Play workflow animation'); pause.innerHTML = playing ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 4v16M16 4v16"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 4 12 8-12 8Z"/></svg>'; demo.classList.toggle('paused', !playing); }
+  tabs.forEach((tab, i) => { tab.addEventListener('click', () => { playing = false; updatePlay(); select(i); }); tab.addEventListener('keydown', e => { let index = i; if (e.key === 'ArrowRight') index = (i + 1) % tabs.length; else if (e.key === 'ArrowLeft') index = (i - 1 + tabs.length) % tabs.length; else if (e.key === 'Home') index = 0; else if (e.key === 'End') index = tabs.length - 1; else return; e.preventDefault(); playing = false; updatePlay(); select(index); tabs[index].focus(); }); });
+  pause.addEventListener('click', () => { playing = !playing; updatePlay(); });
+  reduced.addEventListener('change', () => { if (reduced.matches) { playing = false; updatePlay(); } });
+  if ('IntersectionObserver' in window) new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }).observe(demo);
+  setInterval(() => { if (playing && visible && !document.hidden) select((active + 1) % tabs.length); }, 3600);
+  updatePlay();
+</script>

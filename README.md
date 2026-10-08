@@ -366,3 +366,14 @@ solves issues.
 ## License
 
 MIT
+
+## Product website and documentation
+
+The responsive product site and full documentation live in [`website/`](website/).
+It includes searchable guides, CLI and Python API references, provider setup,
+custom workflows, and an interactive command builder.
+
+To deploy it on Vercel, import this repository and set **Root Directory** to
+`website`, **Framework Preset** to **Astro**, **Build Command** to `npm run build`,
+and **Output Directory** to `dist`. No API keys are needed for the website.
+See [`website/README.md`](website/README.md) for development and deployment details.

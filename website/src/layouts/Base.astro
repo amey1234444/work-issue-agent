@@ -1,0 +1,68 @@
+---
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+interface Props { title: string; description?: string; docs?: boolean }
+const { title, description = 'A workflow-driven AI coding agent. Turn GitHub issues into code, tests, and pull requests using your repository’s own rules.', docs = false } = Astro.props;
+const repo = 'https://github.com/amey1234444/work-issue-agent';
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffffff" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta name="twitter:card" content="summary" />
+    {canonical && <><link rel="canonical" href={canonical} /><meta property="og:url" content={canonical} /></>}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <script is:inline>
+      try { const saved = localStorage.getItem('wia-theme'); document.documentElement.dataset.theme = saved || 'light'; } catch { document.documentElement.dataset.theme = 'light'; }
+    </script>
+  </head>
+  <body class:list={[docs && 'documentation']}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="nav-inner">
+        <a class="brand" href="/" aria-label="Work Issue Agent home"><span class="brand-mark">w</span><span>work issue<span class="brand-agent"> agent</span></span></a>
+        <nav class="desktop-nav" aria-label="Main navigation">
+          <a href="/#how-it-works">Product</a>
+          <a href="/docs/introduction/" aria-current={docs ? 'page' : undefined}>Documentation</a>
+          <a href="/docs/workflows/">Workflows</a>
+        </nav>
+        <div class="nav-actions">
+          <button class="search-trigger" data-search-open aria-label="Search documentation"><Icon name="search" size={16} /><span>Search docs</span><kbd>⌘ K</kbd></button>
+          <a class="icon-button github-nav" href={repo} aria-label="View on GitHub"><Icon name="github" /></a>
+          <button class="icon-button theme-toggle" aria-label="Switch color theme"><Icon name="sun" class="theme-sun" /><Icon name="moon" class="theme-moon" /></button>
+          <a class="button small nav-start" href="/docs/quickstart/">Get started</a>
+          <button class="icon-button mobile-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav"><Icon name="menu" /></button>
+        </div>
+      </div>
+      <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile navigation" hidden>
+        <a href="/#how-it-works">Product</a><a href="/docs/introduction/">Documentation</a><a href="/docs/workflows/">Workflows</a><a href={repo}>GitHub repository</a><a href="/docs/quickstart/">Get started</a>
+      </nav>
+    </header>
+    <slot />
+    <footer class="site-footer">
+      <div class="footer-main"><div><a class="brand" href="/"><span class="brand-mark">w</span><span>work issue agent</span></a><p>From issue to implementation.<br />On your terms.</p></div>
+        <div><h2>Build</h2><a href="/docs/quickstart/">Quickstart</a><a href="/docs/cli/">CLI reference</a><a href="/docs/python-api/">Python API</a></div>
+        <div><h2>Learn</h2><a href="/docs/workflows/">Workflows</a><a href="/docs/architecture/">Architecture</a><a href="/docs/troubleshooting/">Troubleshooting</a></div>
+        <div><h2>Open source</h2><a href={repo}>GitHub</a><a href="/docs/contributing/">Contribute</a><a href={`${repo}/blob/main/LICENSE`}>MIT license</a></div>
+      </div>
+      <div class="footer-bottom"><span>Built by Amey Bhagwatkar. Open by design.</span><span>Python 3.10+ <span class="footer-divider">/</span> v0.1.0</span></div>
+    </footer>
+    <dialog class="search-dialog" aria-labelledby="search-title">
+      <div class="search-top"><Icon name="search" /><label class="sr-only" for="doc-search" id="search-title">Search documentation</label><input id="doc-search" type="search" placeholder="Search documentation…" autocomplete="off" /><button class="icon-button" data-search-close aria-label="Close search"><Icon name="close" size={18} /></button></div>
+      <div class="search-results" aria-live="polite"></div>
+      <div class="search-bottom"><span>Search every guide and reference</span><span><kbd>Esc</kbd> to close</span></div>
+    </dialog>
+    <div id="toast" class="toast" role="status"></div>
+    <script>import '../scripts/site';</script>
+  </body>
+</html>

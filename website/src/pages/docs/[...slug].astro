@@ -1,0 +1,37 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+export async function getStaticPaths() { return (await getCollection('docs')).map(doc => ({ params: { slug: doc.id }, props: { doc } })); }
+const { doc } = Astro.props;
+const { Content, headings } = await render(doc);
+const docs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order);
+const groups = [...new Set(docs.map(d => d.data.group))];
+const index = docs.findIndex(d => d.id === doc.id);
+const previous = docs[index - 1], next = docs[index + 1];
+---
+<Base title={`${doc.data.title} — Work Issue Agent`} description={doc.data.description} docs>
+  <div class="docs-subnav"><a href="/docs/introduction/">Documentation</a><span>/</span><span>{doc.data.title}</span><span class="docs-version">v0.1.0</span></div>
+  <div class="docs-layout">
+    <aside class="docs-sidebar" aria-label="Documentation navigation">
+      <details class="docs-menu" open>
+        <summary>Browse documentation <Icon name="menu" size={18} /></summary>
+        <nav>{groups.map(group => <div class="sidebar-group"><h2>{group}</h2>{docs.filter(d => d.data.group === group).map(d => <a href={`/docs/${d.id}/`} aria-current={d.id === doc.id ? 'page' : undefined}>{d.data.title}</a>)}</div>)}</nav>
+      </details>
+      <a class="sidebar-repo" href="https://github.com/amey1234444/work-issue-agent"><Icon name="github" size={17} /> Explore the source</a>
+    </aside>
+    <main id="main" class="doc-main">
+      <header class="doc-heading"><div class="eyebrow">{doc.data.group}</div><h1>{doc.data.title}</h1><p>{doc.data.description}</p></header>
+      <div class="prose"><Content /></div>
+      <div class="doc-source"><span>Documented against v0.1.0</span><a href={`https://github.com/amey1234444/work-issue-agent/blob/main/${doc.data.source}`}>View implementation <Icon name="code" size={15} /></a></div>
+      <nav class="doc-pagination" aria-label="Previous and next articles">{previous ? <a href={`/docs/${previous.id}/`}><span>Previous</span><strong>{previous.data.title}</strong></a> : <span />}{next && <a href={`/docs/${next.id}/`}><span>Next</span><strong>{next.data.title}</strong></a>}</nav>
+    </main>
+    <aside class="toc"><h2>On this page</h2><nav aria-label="Table of contents">{headings.filter(h => h.depth === 2).map(h => <a href={`#${h.slug}`}>{h.text}</a>)}</nav><div class="toc-help"><Icon name="book" size={18} /><p>Something unclear?</p><a href="https://github.com/amey1234444/work-issue-agent/issues/new">Open an issue</a></div></aside>
+  </div>
+  <script>
+    const details = document.querySelector<HTMLDetailsElement>('.docs-menu');
+    const query = matchMedia('(max-width: 900px)');
+    function setMenu() { if (details) details.open = !query.matches; }
+    setMenu(); query.addEventListener('change', setMenu);
+  </script>
+</Base>

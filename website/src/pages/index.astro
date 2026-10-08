@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import WorkflowDemo from '../components/WorkflowDemo.astro';
+import Setup from '../components/Setup.astro';
+const repo = 'https://github.com/amey1234444/work-issue-agent';
+const features = [
+  { number:'01', icon:'file', title:'Your repository is the spec.', body:'AGENTS.md, project instructions, and rule files give every run the conventions your codebase already follows.', link:'/docs/instructions/', label:'Repository context' },
+  { number:'02', icon:'layers', title:'Markdown becomes a command.', body:'Define a workflow once. Run it against an issue or a prompt. Extend the agent without rewriting its engine.', link:'/docs/workflows/', label:'Custom workflows' },
+  { number:'03', icon:'check', title:'A loop built around feedback.', body:'Run the project’s checks. Feed failures back into the next attempt. Inspect the output and review the final diff.', link:'/docs/verification/', label:'Verification and retries' },
+];
+const faqs = [
+  ['Does it write the implementation or just tests?', 'Both. The implementation step can create, modify, or delete production files and add tests. What it produces depends on the task, the selected model, and your repository instructions.'],
+  ['Can I try it without an API key?', 'Yes. Use the mock provider with a free-form prompt and --no-pr. It returns a fixed plan and creates AGENT_NOTES.md. This tests the pipeline without model or GitHub calls; it does not solve the task with AI.'],
+  ['Can I review changes before anything is pushed?', 'Yes. --dry-run stops after planning. --no-pr applies changes and runs verification locally, without the branch, commit, push, or PR steps. Use a clean checkout so you can inspect the complete diff.'],
+  ['Does it support my project’s language?', 'The agent itself runs on Python 3.10+. It can work on other languages through the selected model, provided your local environment has the real build and test tools and your repository instructions explain how to use them.'],
+  ['Does a pull request mean every check passed?', 'Not necessarily. In version 0.1.0, the agent can open a PR after the retry limit is exhausted, and verification is skipped when no test command exists. Review test_output, the diff, and your repository CI before merging.'],
+  ['Is this a hosted coding service?', 'No. This is an open-source local CLI and Python library. You bring the checkout, provider credentials, and toolchain. This website provides the product guide and documentation.'],
+];
+---
+<Base title="Work Issue Agent — From issue to implementation">
+  <main id="main">
+    <section class="hero page-grid">
+      <div class="hero-intro"><a href="/docs/introduction/" class="release-pill"><span>v0.1.0</span> Open source. Workflow driven. <Icon name="chevron" size={13} /></a><h1>An issue in.<br /><span class="headline-muted">A pull request out.</span></h1><p class="hero-description">Your issues. Your codebase. Your rules.<br />An AI coding agent that plans, implements, and verifies<br class="desktop-break" /> changes in the workflow you define.</p><div class="button-row"><a class="button" href="/docs/quickstart/"><Icon name="terminal" size={17} /> Start building</a><a class="button secondary" href={repo}><Icon name="github" size={17} /> Explore on GitHub</a></div><button class="install-line" data-copy='pip install "github-issue-agent[openai]"' aria-label="Copy pip install command"><span>$</span><code>pip install "github-issue-agent[openai]"</code><Icon name="copy" size={14} /></button></div>
+      <div class="hero-demo-wrap"><WorkflowDemo /></div>
+      <div class="compatibility"><span>CHOOSE YOUR MODEL.<br />KEEP YOUR WORKFLOW.</span><div class="provider-wordmark"><span class="provider-glyph">✳</span> OpenAI</div><div class="provider-wordmark anthropic">ANTHROPIC</div><div class="provider-wordmark"><Icon name="branch" size={23} /> OpenRouter</div><div class="provider-wordmark mock-wordmark"><Icon name="terminal" size={22} /> Mock<span class="provider-note">LOCAL</span></div></div>
+    </section>
+    <section class="section section-bordered" id="how-it-works">
+      <div class="section-heading" data-reveal><span class="eyebrow">A SMALL AGENT. A COMPLETE LOOP.</span><h2>The work moves forward.<br /><span class="muted">You stay in control.</span></h2><p>From the first instruction to the final diff,<br />every step belongs to your repository.</p></div>
+      <div class="feature-grid">{features.map(feature => <article class="feature" data-reveal><div class="feature-top"><Icon name={feature.icon} size={24} /><span>{feature.number}</span></div><h3>{feature.title}</h3><p>{feature.body}</p><a href={feature.link}>{feature.label}<Icon name="chevron" size={15} /></a></article>)}</div>
+    </section>
+    <section class="rules-section section-bordered">
+      <div class="rules-copy" data-reveal><span class="eyebrow">CONVENTIONS, NOT GUESSWORK</span><h2>It starts with<br /><span class="muted">how you work.</span></h2><p>Your repository already knows its language, tests, and conventions. Give the agent that context—and a clear task to follow.</p><div class="rule-list"><div><Icon name="file" size={19} /><span><strong>Repository instructions</strong><small>AGENTS.md · README · CONTRIBUTING</small></span></div><div><Icon name="layers" size={19} /><span><strong>Reusable workflows</strong><small>work-issue · fix-bug · add-feature</small></span></div><div><Icon name="settings" size={19} /><span><strong>Your verification commands</strong><small>Run the toolchain your project actually uses.</small></span></div></div><a class="button secondary" href="/docs/workflows/">Build your first workflow</a></div>
+      <div class="repo-window" data-reveal><div class="repo-window-top"><span><Icon name="github" size={17} /> your-repository</span><span class="mono muted">main</span></div><div class="repo-window-body"><div class="repo-tree"><div><Icon name="file" size={15} /> AGENTS.md</div><div class="tree-active"><Icon name="layers" size={15} /> .ai / workflows</div><div class="tree-child">work-issue.md</div><div class="tree-child">fix-bug.md</div><div class="tree-child">add-feature.md</div><div><Icon name="settings" size={15} /> .ai / config.yaml</div><div><Icon name="code" size={15} /> src /</div><div><Icon name="check" size={15} /> tests /</div></div><div class="repo-code"><span class="code-file">work-issue.md</span><div><span class="code-blue"># Workflow: Work Issue</span><br /><br /><span class="code-purple">## Steps</span><br /><br /><span class="line-no">1.</span> Read the issue.<br /><span class="line-no">2.</span> Follow repo instructions.<br /><span class="line-no">3.</span> Plan a focused change.<br /><span class="line-no">4.</span> Implement code + tests.<br /><span class="line-no">5.</span> Run verification.<br /><span class="line-no">6.</span> Prepare the pull request.<br /><br /><span class="code-comment"># Your workflow. In plain text.</span></div></div></div><div class="repo-window-bottom"><Icon name="check" size={14} /> Discovered automatically. No agent code changes.</div></div>
+    </section>
+    <section class="developer-section section-bordered" id="developer-experience"><div class="section-heading" data-reveal><span class="eyebrow">MEET IT WHERE YOU BUILD</span><h2>One engine.<br /><span class="muted">Your preferred interface.</span></h2><p>Run a command in your terminal.<br />Or make the agent part of your Python application.</p></div><div class="interface-card" data-reveal><div class="interface-copy"><div class="interface-tabs" role="tablist" aria-label="Agent interfaces"><button class="active" role="tab" aria-selected="true" aria-controls="interface-cli" id="interface-tab-cli" data-interface="cli"><Icon name="terminal" size={17} /> CLI</button><button role="tab" aria-selected="false" aria-controls="interface-python" id="interface-tab-python" tabindex="-1" data-interface="python"><Icon name="code" size={17} /> Python API</button></div><h3 id="interface-title">An issue. A single command.</h3><p id="interface-description">Point the agent at a local checkout and a GitHub issue. Preview the plan, keep changes local, or let it open a pull request.</p><a id="interface-link" class="text-link" href="/docs/cli/">Explore the CLI reference</a></div><div class="interface-code"><div id="interface-cli" role="tabpanel" aria-labelledby="interface-tab-cli" tabindex="0"><div class="code-label">terminal</div><pre><span class="code-comment"># Preview before you implement</span>
+<span class="code-blue">github-issue-agent</span> work-issue \
+  https://github.com/OWNER/REPO/issues/123 \
+  <span class="code-purple">--path</span> ./target-repo \
+  <span class="code-purple">--dry-run</span>
+
+<span class="code-comment"># Your repo needs a workflow and GitHub token.</span></pre></div><div id="interface-python" role="tabpanel" aria-labelledby="interface-tab-python" tabindex="0" hidden><div class="code-label">agent.py</div><pre><span class="code-purple">from</span> github_issue_agent <span class="code-purple">import</span> work_issue
+
+result = <span class="code-blue">work_issue</span>(
+    <span class="code-green">"https://github.com/OWNER/REPO/issues/123"</span>,
+    repo_path=<span class="code-green">"./target-repo"</span>,
+    open_pr=<span class="code-purple">False</span>,
+)
+print(result.summary, result.test_output)</pre></div></div></div></section>
+    <section class="setup-section section-bordered" id="get-started"><div class="section-heading" data-reveal><span class="eyebrow">LESS SETUP. MORE BUILDING.</span><h2>Your next issue<br /><span class="muted">starts here.</span></h2><p>Python 3.10+, a local checkout,<br />and a workflow that tells the agent what matters.</p></div><Setup /></section>
+    <section class="docs-promo section-bordered" data-reveal><div><span class="eyebrow">DOCUMENTATION THAT GOES DEEP</span><h2>Understand every step.</h2><p>From your first local run to custom prompts and Python integrations.</p></div><div class="doc-link-grid"><a href="/docs/quickstart/"><Icon name="terminal" /><span><strong>Quickstart</strong><small>Your first working run</small></span><Icon name="chevron" size={16} /></a><a href="/docs/configuration/"><Icon name="settings" /><span><strong>Configuration</strong><small>Every setting, explained</small></span><Icon name="chevron" size={16} /></a><a href="/docs/python-api/"><Icon name="code" /><span><strong>API reference</strong><small>Build it into your tools</small></span><Icon name="chevron" size={16} /></a><a href="/docs/architecture/"><Icon name="layers" /><span><strong>Architecture</strong><small>Inside the agent</small></span><Icon name="chevron" size={16} /></a></div></section>
+    <section class="faq-section section-bordered"><div data-reveal><span class="eyebrow">BEFORE YOU RUN</span><h2>A few good<br />questions.</h2><p>Clear expectations.<br />Better results.</p></div><div class="faq-list">{faqs.map(([question, answer]) => <details><summary>{question}<span class="faq-plus">+</span></summary><p>{answer}</p></details>)}</div></section>
+    <section class="closing-cta page-grid"><div class="closing-mark brand-mark">w</div><span class="eyebrow">OPEN SOURCE. IN YOUR HANDS.</span><h2>Give your next issue<br />a workflow.</h2><div class="button-row"><a href="/docs/quickstart/" class="button">Start building</a><a href={repo} class="button secondary"><Icon name="github" size={17} /> View the source</a></div><p>MIT licensed. Built to be understood and extended.</p></section>
+  </main>
+  <script>
+    const interfaceTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-interface]'));
+    function selectInterface(tab: HTMLButtonElement) {
+      const python = tab.dataset.interface === 'python';
+      interfaceTabs.forEach(t => { const active = t === tab; t.classList.toggle('active', active); t.setAttribute('aria-selected', String(active)); t.tabIndex = active ? 0 : -1; });
+      document.querySelector<HTMLElement>('#interface-cli')!.hidden = python;
+      document.querySelector<HTMLElement>('#interface-python')!.hidden = !python;
+      document.querySelector('#interface-title')!.textContent = python ? 'Your agent, in your application.' : 'An issue. A single command.';
+      document.querySelector('#interface-description')!.textContent = python ? 'Call a workflow from Python and receive a structured result. Stream progress through a callback and inspect the plan, edits, and verification output.' : 'Point the agent at a local checkout and a GitHub issue. Preview the plan, keep changes local, or let it open a pull request.';
+      const link = document.querySelector<HTMLAnchorElement>('#interface-link')!; link.href = python ? '/docs/python-api/' : '/docs/cli/'; link.textContent = python ? 'Explore the Python API' : 'Explore the CLI reference';
+    }
+    interfaceTabs.forEach((tab, i) => { tab.addEventListener('click', () => selectInterface(tab)); tab.addEventListener('keydown', event => { if (['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? interfaceTabs[0] : event.key === 'End' ? interfaceTabs[1] : interfaceTabs[1-i]; selectInterface(next); next.focus(); } }); });
+  </script>
+</Base>
