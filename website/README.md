@@ -1,4 +1,4 @@
-# Work Issue Agent website
+# Patchlane website
 
 The product site and documentation for `github-issue-agent`, built with Astro and TypeScript. All pages are rendered to static HTML. There is no server-side agent execution, credential collection, account system, or database.
 
@@ -61,3 +61,7 @@ The documentation is based on the checked-in Python implementation (v0.1.0), inc
 ## Updating articles
 
 Each Markdown file has `title`, `description`, `group`, `order`, and optionally `source` (a repo-relative implementation path). Add an article and rebuild: routes, search, and navigation update automatically. Check statements against the actual code and run the validation commands before submitting a PR.
+
+## Product identity
+
+The website is branded as **Patchlane**. The repository remains `work-issue-agent`, the Python distribution and CLI remain `github-issue-agent`, and imports remain `github_issue_agent`. This is a website rebrand; installation and backend behavior are unchanged. The reusable vector mark is in `src/components/Logo.astro` and `public/brand/patchlane-mark.svg`.

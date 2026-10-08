@@ -11,7 +11,8 @@ export function notify(message: string) {
 document.querySelector('.theme-toggle')?.addEventListener('click', () => {
   const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem('wia-theme', theme); } catch { /* Theme still works without storage. */ }
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b100e' : '#f8faf8');
+  try { localStorage.setItem('patchlane-theme', theme); } catch { /* Theme still works without storage. */ }
 });
 
 const menu = document.querySelector<HTMLElement>('#mobile-nav');

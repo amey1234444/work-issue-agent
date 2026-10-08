@@ -3,6 +3,8 @@ import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import '../styles/global.css';
 import '../styles/experience.css';
+import '../styles/patchlane.css';
+import Logo from '../components/Logo.astro';
 import Icon from '../components/Icon.astro';
 interface Props { title: string; description?: string; docs?: boolean }
 const { title, description = 'A workflow-driven AI coding agent. Turn GitHub issues into code, tests, and pull requests using your repository’s own rules.', docs = false } = Astro.props;
@@ -15,7 +17,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#0b100e" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -24,14 +26,15 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
     <script is:inline>
-      try { const saved = localStorage.getItem('wia-theme'); document.documentElement.dataset.theme = saved || 'light'; } catch { document.documentElement.dataset.theme = 'light'; }
+      try { const saved = localStorage.getItem('patchlane-theme') || localStorage.getItem('wia-theme'); document.documentElement.dataset.theme = saved === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
+      document.querySelector('meta[name="theme-color"]').content = document.documentElement.dataset.theme === 'dark' ? '#0b100e' : '#f8faf8';
     </script>
   </head>
   <body class:list={[docs && 'documentation']}>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="nav-inner">
-        <a class="brand" href="/" aria-label="Work Issue Agent home"><span class="brand-mark">w</span><span>work issue<span class="brand-agent"> agent</span></span></a>
+        <a class="brand" href="/" aria-label="Patchlane home"><Logo /><span>patchlane<span class="brand-period">.</span></span></a>
         <nav class="desktop-nav" aria-label="Main navigation">
           <a href="/#how-it-works">Product</a>
           <a href="/docs/" aria-current={docs ? 'page' : undefined}>Docs</a>
@@ -52,7 +55,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     </header>
     <slot />
     <footer class="site-footer">
-      <div class="footer-main"><div><a class="brand" href="/"><span class="brand-mark">w</span><span>work issue agent</span></a><p>From issue to implementation.<br />On your terms.</p></div>
+      <div class="footer-main"><div><a class="brand" href="/"><Logo /><span>patchlane<span class="brand-period">.</span></span></a><p>A clear path from issue to code.<br />Built around the way you work.</p></div>
         <div><h2>Build</h2><a href="/docs/quickstart/">Quickstart</a><a href="/docs/cli/">CLI reference</a><a href="/docs/python-api/">Python API</a></div>
         <div><h2>Learn</h2><a href="/docs/manual/">User manual</a><a href="/architecture/">Architecture explorer</a><a href="/docs/workflows/">Workflows</a><a href="/docs/troubleshooting/">Troubleshooting</a></div>
         <div><h2>Open source</h2><a href={repo}>GitHub</a><a href="/docs/contributing/">Contribute</a><a href={`${repo}/blob/main/LICENSE`}>MIT license</a></div>

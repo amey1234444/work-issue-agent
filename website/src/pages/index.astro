@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import WorkflowDemo from '../components/WorkflowDemo.astro';
 import Setup from '../components/Setup.astro';
+import Logo from '../components/Logo.astro';
 const repo = 'https://github.com/amey1234444/work-issue-agent';
 const features = [
   { number:'01', icon:'file', title:'Your repository is the spec.', body:'AGENTS.md, project instructions, and rule files give every run the conventions your codebase already follows.', link:'/docs/instructions/', label:'Repository context' },
@@ -18,15 +19,40 @@ const faqs = [
   ['Is this a hosted coding service?', 'No. This is an open-source local CLI and Python library. You bring the checkout, provider credentials, and toolchain. This website provides the product guide and documentation.'],
 ];
 ---
-<Base title="Work Issue Agent — From issue to implementation">
+<Base title="Patchlane — From issue to implementation">
   <main id="main">
-    <section class="hero page-grid">
-      <div class="hero-intro"><a href="/docs/introduction/" class="release-pill"><span>v0.1.0</span> Open source. Workflow driven. <Icon name="chevron" size={13} /></a><h1>An issue in.<br /><span class="headline-muted">A pull request out.</span></h1><p class="hero-description">Your issues. Your codebase. Your rules.<br />An AI coding agent that plans, implements, and verifies<br class="desktop-break" /> changes in the workflow you define.</p><div class="button-row"><a class="button" href="/docs/quickstart/"><Icon name="terminal" size={17} /> Start building</a><a class="button secondary" href={repo}><Icon name="github" size={17} /> Explore on GitHub</a></div><button class="install-line" data-copy='pip install "github-issue-agent[openai]"' aria-label="Copy pip install command"><span>$</span><code>pip install "github-issue-agent[openai]"</code><Icon name="copy" size={14} /></button></div>
-      <div class="hero-demo-wrap"><WorkflowDemo /></div>
-      <div class="compatibility"><span>CHOOSE YOUR MODEL.<br />KEEP YOUR WORKFLOW.</span><div class="provider-wordmark"><span class="provider-glyph">✳</span> OpenAI</div><div class="provider-wordmark anthropic">ANTHROPIC</div><div class="provider-wordmark"><Icon name="branch" size={23} /> OpenRouter</div><div class="provider-wordmark mock-wordmark"><Icon name="terminal" size={22} /> Mock<span class="provider-note">LOCAL</span></div></div>
+    <section class="patch-hero">
+      <div class="hero-aura" aria-hidden="true"></div>
+      <div class="patch-hero-copy">
+        <a href="/docs/introduction/" class="release-pill"><span class="release-dot"></span> INTRODUCING PATCHLANE <span>v0.1.0</span><Icon name="chevron" size={13} /></a>
+        <h1>Less backlog.<br />More <span class="hero-accent">building.</span></h1>
+        <p class="hero-description">Give your next issue a clear path to code.<br />An open-source AI agent that plans, implements, and verifies changes—inside your workflow.</p>
+        <div class="button-row"><a class="button" href="/docs/quickstart/">Start building <Icon name="chevron" size={16} /></a><a class="button secondary" href={repo}><Icon name="github" size={17} /> View on GitHub</a></div>
+        <button class="install-line" data-copy='pip install "github-issue-agent[openai]"' aria-label="Copy pip install command"><span>$</span><code>pip install "github-issue-agent[openai]"</code><Icon name="copy" size={14} /></button>
+        <div class="hero-assurances"><span><Icon name="check" size={13} /> Runs locally</span><span><Icon name="check" size={13} /> Bring your model</span><span><Icon name="check" size={13} /> MIT licensed</span></div>
+      </div>
+      <div class="hero-studio" aria-label="Illustration of a Patchlane workflow">
+        <div class="studio-orbit orbit-one" aria-hidden="true"></div><div class="studio-orbit orbit-two" aria-hidden="true"></div>
+        <div class="studio-window">
+          <div class="studio-toolbar"><span class="studio-identity"><Logo size={19} /> patchlane</span><span class="studio-mode">WORKFLOW PREVIEW</span><span class="studio-dots" aria-hidden="true">•••</span></div>
+          <div class="studio-task"><div class="studio-label"><Icon name="issue" size={15} /> TASK INPUT <span>01</span></div><h2>Add contribution guidelines</h2><div class="studio-task-meta"><span>documentation</span><span>work-issue.md</span></div></div>
+          <div class="studio-bridge"><span></span><Icon name="chevron" size={13} /><span></span></div>
+          <div class="studio-plan"><div class="studio-label"><Logo size={16} /> A REPOSITORY-AWARE PLAN <span>02</span></div><ol><li><span>01</span> Read the project conventions <Icon name="check" size={14} /></li><li><span>02</span> Write a focused contribution guide <Icon name="check" size={14} /></li><li><span>03</span> Run the repository’s test command <Icon name="check" size={14} /></li></ol></div>
+          <div class="studio-code"><div><Icon name="file" size={14} /> CONTRIBUTING.md <span>PROPOSED CHANGE</span></div><pre><span>+ # Contributing</span>
+<span>+ Keep changes focused.</span>
+<span>+ Run pytest before opening a PR.</span></pre></div>
+          <div class="studio-bottom"><span class="studio-status-dot"></span><span>Your instructions. Every step.</span><Icon name="branch" size={15} /></div>
+        </div>
+        <div class="studio-caption"><span>ILLUSTRATED WORKFLOW</span><a href="/architecture/">See how the engine works <Icon name="chevron" size={13} /></a></div>
+      </div>
+    </section>
+    <div class="model-strip"><span>YOUR MODEL.<br /><strong>YOUR CALL.</strong></span><div>OpenAI <span>↗</span></div><div class="anthropic">ANTHROPIC</div><div><Icon name="branch" size={22} /> OpenRouter</div><div><Icon name="terminal" size={21} /> Mock <small>LOCAL</small></div><a href="/docs/providers/">Explore providers <Icon name="chevron" size={14} /></a></div>
+    <section class="pipeline-section section-bordered">
+      <div class="pipeline-intro"><span class="eyebrow">01 / THE PATH FROM ISSUE TO PR</span><h2>Move the work forward.<br /><span class="muted">Keep the context.</span></h2><p>One connected loop, guided by the rules already in your repository. Explore a recorded example, one step at a time.</p></div>
+      <WorkflowDemo />
     </section>
     <section class="section section-bordered" id="how-it-works">
-      <div class="section-heading" data-reveal><span class="eyebrow">A SMALL AGENT. A COMPLETE LOOP.</span><h2>The work moves forward.<br /><span class="muted">You stay in control.</span></h2><p>From the first instruction to the final diff,<br />every step belongs to your repository.</p></div>
+      <div class="section-heading" data-reveal><span class="eyebrow">02 / BUILT AROUND YOUR CODEBASE</span><h2>The right context.<br /><span class="muted">A more focused change.</span></h2><p>From the first instruction to the final diff,<br />every step belongs to your repository.</p></div>
       <div class="feature-grid">{features.map(feature => <article class="feature" data-reveal><div class="feature-top"><Icon name={feature.icon} size={24} /><span>{feature.number}</span></div><h3>{feature.title}</h3><p>{feature.body}</p><a href={feature.link}>{feature.label}<Icon name="chevron" size={15} /></a></article>)}</div>
     </section>
     <section class="engine-promo section-bordered" data-reveal><div class="engine-promo-copy"><span class="eyebrow">NO BLACK BOX</span><h2>Every step,<br /><span>in the open.</span></h2><p>Follow a task through the actual engine. See what the model receives, how edits reach your files, and where failed tests send the flow next.</p><a class="button" href="/architecture/"><Icon name="layers" size={17} /> Explore the architecture</a><a class="engine-manual-link" href="/docs/manual/">Or follow the complete user manual</a></div><div class="engine-preview" aria-label="Simplified pipeline: context, plan, implement, verify, with failure feedback"><div class="engine-preview-title"><span>WORKFLOW ENGINE</span><span>v0.1.0</span></div><div class="engine-preview-entry"><Icon name="file" size={20} /><span>Issue + repository context</span></div><div class="engine-preview-flow"><div><Icon name="layers" size={24} /><strong>Plan</strong><code>files + steps</code></div><span class="engine-link"></span><div><Icon name="code" size={24} /><strong>Implement</strong><code>code + tests</code></div><span class="engine-link"></span><div><Icon name="check" size={24} /><strong>Verify</strong><code>exit + output</code></div></div><div class="engine-feedback"><span></span><code>failure output → next implementation</code><span></span></div><div class="engine-preview-bottom"><span>Inspect 6 execution scenarios</span><Icon name="play" size={15} /></div></div></section>
@@ -51,7 +77,7 @@ print(result.summary, result.test_output)</pre></div></div></div></section>
     <section class="setup-section section-bordered" id="get-started"><div class="section-heading" data-reveal><span class="eyebrow">LESS SETUP. MORE BUILDING.</span><h2>Your next issue<br /><span class="muted">starts here.</span></h2><p>Python 3.10+, a local checkout,<br />and a workflow that tells the agent what matters.</p></div><Setup /></section>
     <section class="docs-promo section-bordered" data-reveal><div><span class="eyebrow">DOCUMENTATION THAT GOES DEEP</span><h2>Understand every step.</h2><p>From your first local run to custom prompts and Python integrations.</p></div><div class="doc-link-grid"><a href="/docs/quickstart/"><Icon name="terminal" /><span><strong>Quickstart</strong><small>Your first working run</small></span><Icon name="chevron" size={16} /></a><a href="/docs/configuration/"><Icon name="settings" /><span><strong>Configuration</strong><small>Every setting, explained</small></span><Icon name="chevron" size={16} /></a><a href="/docs/python-api/"><Icon name="code" /><span><strong>API reference</strong><small>Build it into your tools</small></span><Icon name="chevron" size={16} /></a><a href="/docs/architecture/"><Icon name="layers" /><span><strong>Architecture</strong><small>Inside the agent</small></span><Icon name="chevron" size={16} /></a></div></section>
     <section class="faq-section section-bordered"><div data-reveal><span class="eyebrow">BEFORE YOU RUN</span><h2>A few good<br />questions.</h2><p>Clear expectations.<br />Better results.</p></div><div class="faq-list">{faqs.map(([question, answer]) => <details><summary>{question}<span class="faq-plus">+</span></summary><p>{answer}</p></details>)}</div></section>
-    <section class="closing-cta page-grid"><div class="closing-mark brand-mark">w</div><span class="eyebrow">OPEN SOURCE. IN YOUR HANDS.</span><h2>Give your next issue<br />a workflow.</h2><div class="button-row"><a href="/docs/quickstart/" class="button">Start building</a><a href={repo} class="button secondary"><Icon name="github" size={17} /> View the source</a></div><p>MIT licensed. Built to be understood and extended.</p></section>
+    <section class="closing-cta page-grid"><div class="closing-logo"><Logo size={52} /></div><span class="eyebrow">OPEN SOURCE. IN YOUR HANDS.</span><h2>Your next idea.<br /><span class="hero-accent">A little closer to shipped.</span></h2><div class="button-row"><a href="/docs/quickstart/" class="button">Start building</a><a href={repo} class="button secondary"><Icon name="github" size={17} /> View the source</a></div><p>MIT licensed. Built to be understood and extended.</p></section>
   </main>
   <script>
     const interfaceTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-interface]'));

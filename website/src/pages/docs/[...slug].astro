@@ -11,7 +11,7 @@ const index = docs.findIndex(d => d.id === doc.id);
 const previous = docs[index - 1], next = docs[index + 1];
 const readingMinutes = Math.max(1, Math.ceil((doc.body || '').split(/\s+/).length / 220));
 ---
-<Base title={`${doc.data.title} — Work Issue Agent`} description={doc.data.description} docs>
+<Base title={`${doc.data.title} — Patchlane`} description={doc.data.description} docs>
   <div class="reading-progress" aria-hidden="true"><span></span></div>
   <div class="docs-subnav"><a href="/docs/">Documentation</a><span>/</span><span>{doc.data.title}</span><span class="docs-version">v0.1.0</span></div>
   <div class="docs-layout">

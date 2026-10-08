@@ -6,7 +6,7 @@ order: 2.5
 source: github_issue_agent/api.py
 ---
 
-This manual walks through using Work Issue Agent as a local CLI and a Python library. Start with the mock walkthrough, prepare your own repository, inspect a real model's plan, then apply and review changes before enabling publication.
+This manual walks through using Patchlane as a local CLI and a Python library. Start with the mock walkthrough, prepare your own repository, inspect a real model's plan, then apply and review changes before enabling publication.
 
 [Download this manual as Markdown](/manual.md) · [Explore the animated architecture](/architecture/)
 

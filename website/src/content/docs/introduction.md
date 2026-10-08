@@ -5,7 +5,7 @@ group: Start here
 order: 1
 ---
 
-Work Issue Agent is a workflow-driven AI coding agent for local repositories. Give it a GitHub issue or a task, and it reads your instructions, makes a plan, writes implementation code and tests, runs verification, and can open a pull request.
+Patchlane is a workflow-driven AI coding agent for local repositories. Give it a GitHub issue or a task, and it reads your instructions, makes a plan, writes implementation code and tests, runs verification, and can open a pull request.
 
 The repository is the behavior specification. Markdown files in `.ai/workflows/` define commands. `AGENTS.md`, other instruction files, and `.ai/rules/` tell the agent how to work.
 
@@ -28,8 +28,11 @@ The repository is the behavior specification. Markdown files in `.ai/workflows/`
 
 ## Know the package names
 
+**Patchlane** is the product and website name. The existing repository, Python distribution, imports, and commands keep their original names, so the examples below work with the current release.
+
 | Surface | Name |
 | --- | --- |
+| Product | Patchlane |
 | GitHub repository | `amey1234444/work-issue-agent` |
 | Python distribution | `github-issue-agent` |
 | Python import | `github_issue_agent` |

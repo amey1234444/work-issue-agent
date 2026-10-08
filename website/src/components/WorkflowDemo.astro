@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import Logo from './Logo.astro';
 const steps = [{icon:'issue', label:'Read', detail:'Issue + repository context'}, {icon:'layers',label:'Plan',detail:'A focused implementation plan'}, {icon:'code',label:'Implement',detail:'Code changes + tests'}, {icon:'check',label:'Verify',detail:'Run checks. Iterate on failures.'}, {icon:'branch',label:'Pull request',detail:'A change ready for review'}];
 ---
 <div class="workflow-demo" id="workflow-demo" data-stage="0">
@@ -7,7 +8,7 @@ const steps = [{icon:'issue', label:'Read', detail:'Issue + repository context'}
   <div class="pipeline-canvas">
     <div class="pipeline-card issue-card"><div class="pipeline-card-top"><span class="issue-symbol"><Icon name="issue" size={18} /></span><span>GitHub issue</span><span class="muted">#2</span></div><strong>Add contribution<br />guidelines</strong><div class="issue-tags"><span>documentation</span><span>good first issue</span></div><div class="issue-card-bottom"><span class="mini-avatar">A</span><span>work-issue-agent</span></div></div>
     <div class="connection connection-in"><span></span><i></i></div>
-    <div class="agent-node"><div class="node-orbit"></div><div class="node-face"><span class="brand-mark">w</span></div><span class="node-label">WORK ISSUE AGENT</span><span class="node-status" id="node-status">Reading context</span></div>
+    <div class="agent-node"><div class="node-orbit"></div><div class="node-face"><Logo size={38} /></div><span class="node-label">PATCHLANE</span><span class="node-status" id="node-status">Reading context</span></div>
     <div class="connection connection-out"><span></span><i></i></div>
     <div class="pipeline-card pr-card"><div class="pipeline-card-top"><span class="pr-symbol"><Icon name="branch" size={18} /></span><span>Pull request</span><span class="muted">#3</span></div><strong>Contribution guidelines,<br />ready for review.</strong><div class="diff-summary"><span>+ CONTRIBUTING.md</span></div><div class="pr-card-bottom"><span><Icon name="check" size={14} /> Checks passed</span><span class="pr-open">Open</span></div></div>
   </div>

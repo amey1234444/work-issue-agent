@@ -6,7 +6,7 @@ order: 14
 source: AGENTS.md
 ---
 
-Work Issue Agent is MIT licensed. Start with a focused issue or pull request that explains the problem and the expected behavior.
+Patchlane is MIT licensed. Start with a focused issue or pull request that explains the problem and the expected behavior.
 
 ## Development setup
 
