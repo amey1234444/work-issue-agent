@@ -11,7 +11,7 @@ export function notify(message: string) {
 document.querySelector('.theme-toggle')?.addEventListener('click', () => {
   const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b100e' : '#f8faf8');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#080808' : '#ffffff');
   try { localStorage.setItem('patchlane-theme', theme); } catch { /* Theme still works without storage. */ }
 });
 

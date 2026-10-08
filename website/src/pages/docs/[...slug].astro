@@ -23,7 +23,7 @@ const readingMinutes = Math.max(1, Math.ceil((doc.body || '').split(/\s+/).lengt
       <a class="sidebar-repo" href="https://github.com/amey1234444/work-issue-agent"><Icon name="github" size={17} /> Explore the source</a>
     </aside>
     <main id="main" class="doc-main">
-      <header class="doc-heading"><div class="eyebrow">{doc.data.group}</div><h1>{doc.data.title}</h1><p>{doc.data.description}</p><div class="article-tools"><span>{readingMinutes} min read</span>{doc.id === 'manual' && <a href="/manual.md" download="work-issue-agent-manual.md"><Icon name="download" size={15} /> Download manual</a>}<button id="print-article"><Icon name="file" size={15} /> Print guide</button></div></header>
+      <header class="doc-heading"><div class="eyebrow">{doc.data.group}</div><h1>{doc.data.title}</h1><p>{doc.data.description}</p><div class="article-tools"><span>{readingMinutes} min read</span>{doc.id === 'manual' && <a href="/manual.md" download="patchlane-manual.md"><Icon name="download" size={15} /> Download manual</a>}<button id="print-article"><Icon name="file" size={15} /> Print guide</button></div></header>
       <div class="prose"><Content /></div>
       <div class="doc-source"><span>Documented against v0.1.0</span><a href={`https://github.com/amey1234444/work-issue-agent/blob/main/${doc.data.source}`}>View implementation <Icon name="code" size={15} /></a></div>
       <nav class="doc-pagination" aria-label="Previous and next articles">{previous ? <a href={`/docs/${previous.id}/`}><span>Previous</span><strong>{previous.data.title}</strong></a> : <span />}{next && <a href={`/docs/${next.id}/`}><span>Next</span><strong>{next.data.title}</strong></a>}</nav>
